@@ -83,7 +83,7 @@ public final class EspressoScope {
     // variable names through the Interop API. Clients which are bytecode based, e.g. JDWP that use
     // slot numbers as identifiers must operate directly by using read/write member methods.
     @ExportLibrary(InteropLibrary.class)
-    static final class VariablesMapObject implements TruffleObject {
+    public static final class VariablesMapObject implements TruffleObject {
 
         final Map<String, FrameSlotInfo> slots;
         final Map<String, FrameSlotInfo> identifiers;
@@ -182,17 +182,8 @@ public final class EspressoScope {
         @ExportMessage(limit = "9")
         @TruffleBoundary
         void writeMember(String member, Object value, @CachedLibrary("value") InteropLibrary interop) throws UnknownIdentifierException, UnsupportedMessageException {
-            if (frame == null) {
-                throw UnsupportedMessageException.create();
-            }
-            FrameSlotInfo slotInfo = slots.get(member);
-            if (slotInfo == null) {
-                // try identifiers map also
-                slotInfo = identifiers.get(member);
-            }
-            if (slotInfo == null) {
-                throw UnknownIdentifierException.create(member);
-            }
+
+            FrameSlotInfo slotInfo = lookupMember(member);
 
             EspressoFrame.taint(frame);
 
@@ -212,6 +203,29 @@ public final class EspressoScope {
                     throw EspressoError.shouldNotReachHere();
             }
             // @formatter:on
+        }
+
+        private FrameSlotInfo lookupMember(String member) throws UnsupportedMessageException, UnknownIdentifierException {
+            if (frame == null) {
+                throw UnsupportedMessageException.create();
+            }
+            FrameSlotInfo slotInfo = slots.get(member);
+            if (slotInfo == null) {
+                // try identifiers map also
+                slotInfo = identifiers.get(member);
+            }
+            if (slotInfo == null) {
+                throw UnknownIdentifierException.create(member);
+            }
+            return slotInfo;
+        }
+
+        public Symbol<Symbol.Type> getMembersStaticType(String member) throws UnsupportedMessageException, UnknownIdentifierException {
+            return lookupMember(member).staticType;
+        }
+
+        public List<Integer> getSlotNumbers() {
+            return slots.keySet().stream().map(Integer::parseInt).toList();
         }
 
         @SuppressWarnings("static-method")
@@ -278,10 +292,12 @@ public final class EspressoScope {
 
         private final int slot;
         private final JavaKind kind;
+        private final Symbol<Symbol.Type> staticType;
 
-        FrameSlotInfo(int slot, JavaKind kind) {
+        FrameSlotInfo(int slot, Symbol<Symbol.Type> staticType) {
             this.slot = slot;
-            this.kind = kind;
+            this.kind = Types.getJavaKind(staticType);
+            this.staticType = staticType;
         }
 
         public int getSlot() {
@@ -290,6 +306,10 @@ public final class EspressoScope {
 
         public JavaKind getKind() {
             return kind;
+        }
+
+        public Symbol<Symbol.Type> getStaticType() {
+            return staticType;
         }
     }
 }

@@ -194,6 +194,10 @@ public abstract class DebugValue {
      */
     public abstract boolean isInternal();
 
+    public Object getRawValue() {
+        return get();
+    }
+
     /**
      * Get the scope where this value is declared in. It returns a non-null value for local
      * variables declared on a stack. It's <code>null</code> for object properties and other heap
