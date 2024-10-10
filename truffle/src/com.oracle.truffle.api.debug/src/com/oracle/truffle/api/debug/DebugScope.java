@@ -146,6 +146,10 @@ public final class DebugScope {
         return parent;
     }
 
+    public Object getRawScope() {
+        return scope;
+    }
+
     /**
      * Test if this scope represents the function scope at the frame it was
      * {@link DebugStackFrame#getScope() obtained from}.
