@@ -43,6 +43,9 @@ import static com.oracle.truffle.espresso.classfile.JavaVersion.VersionRange.hig
 import static com.oracle.truffle.espresso.classfile.JavaVersion.VersionRange.lower;
 import static com.oracle.truffle.espresso.impl.EspressoClassLoadingException.wrapClassNotFoundGuestException;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -422,6 +425,10 @@ public final class Meta extends ContextAccessImpl
         java_nio_file_Path = knownKlass(Types.java_nio_file_Path);
         java_nio_file_Paths = knownKlass(Types.java_nio_file_Paths);
         java_nio_file_Paths_get = java_nio_file_Paths.requireDeclaredMethod(Names.get, Signatures.Path_String_String_array);
+        java_io_OutputStream = knownKlass(Type.java_io_OutputStream);
+        java_io_OutputStream_close = java_io_OutputStream.requireDeclaredMethod(Name.close, Signature._void);
+        java_io_IOException = knownKlass(Type.java_io_IOException);
+        java_io_FileNotFoundException = knownKlass(Type.java_io_FileNotFoundException);
 
         java_nio_file_FileAlreadyExistsException = knownKlass(Types.java_nio_file_FileAlreadyExistsException);
         java_nio_file_DirectoryNotEmptyException = knownKlass(Types.java_nio_file_DirectoryNotEmptyException);
@@ -1729,6 +1736,8 @@ public final class Meta extends ContextAccessImpl
     public final ObjectKlass java_security_PrivilegedActionException;
     public final Method java_security_PrivilegedActionException_init_Exception;
 
+    public final ObjectKlass java_io_OutputStream;
+    public final Method java_io_OutputStream_close;
     public final ObjectKlass java_io_InputStream;
     public final Method java_io_InputStream_read;
     public final Method java_io_InputStream_close;
@@ -1736,6 +1745,8 @@ public final class Meta extends ContextAccessImpl
 
     public final ObjectKlass java_io_PrintStream;
     public final Method java_io_PrintStream_println;
+    public final ObjectKlass java_io_IOException;
+    public final ObjectKlass java_io_FileNotFoundException;
 
     public final ObjectKlass java_nio_file_Path;
     public final ObjectKlass java_nio_file_Paths;
