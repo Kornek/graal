@@ -332,6 +332,9 @@ public final class Symbol<T> extends ByteSequence {
         public static final Symbol<Name> read = StaticSymbols.putName("read");
         public static final Symbol<Name> close = StaticSymbols.putName("close");
 
+        //java.io.FileDescriptor
+        public static final Symbol<Name> fd = StaticSymbols.putName("fd");
+
         // java.io.PrintStream
         public static final Symbol<Name> println = StaticSymbols.putName("println");
 
@@ -695,6 +698,10 @@ public final class Symbol<T> extends ByteSequence {
         public static final Symbol<Type> jdk_internal_util_ArraysSupport = StaticSymbols.putType("Ljdk/internal/util/ArraysSupport;");
         public static final Symbol<Type> java_io_InputStream = StaticSymbols.putType("Ljava/io/InputStream;");
         public static final Symbol<Type> java_io_PrintStream = StaticSymbols.putType("Ljava/io/PrintStream;");
+        public static final Symbol<Type> java_io_FileDescriptor = StaticSymbols.putType("Ljava/io/FileDescriptor;");
+        public static final Symbol<Type> java_io_OutputStream = StaticSymbols.putType("Ljava/io/OutputStream;");
+        public static final Symbol<Type> java_io_IOException = StaticSymbols.putType("Ljava/io/IOException;");
+        public static final Symbol<Type> java_io_FileNotFoundException = StaticSymbols.putType("Ljava/io/FileNotFoundException;");
         public static final Symbol<Type> java_nio_file_Path = StaticSymbols.putType("Ljava/nio/file/Path;");
         public static final Symbol<Type> java_nio_file_Path_array = StaticSymbols.putType("[Ljava/nio/file/Path;");
         public static final Symbol<Type> java_nio_file_Paths = StaticSymbols.putType("Ljava/nio/file/Paths;");

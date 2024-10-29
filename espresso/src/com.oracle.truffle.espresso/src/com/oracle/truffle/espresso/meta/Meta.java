@@ -32,6 +32,9 @@ import static com.oracle.truffle.espresso.runtime.JavaVersion.VersionRange.VERSI
 import static com.oracle.truffle.espresso.runtime.JavaVersion.VersionRange.higher;
 import static com.oracle.truffle.espresso.runtime.JavaVersion.VersionRange.lower;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -365,8 +368,12 @@ public final class Meta extends ContextAccessImpl {
         java_io_InputStream = knownKlass(Type.java_io_InputStream);
         java_io_InputStream_read = java_io_InputStream.requireDeclaredMethod(Name.read, Signature._int_byte_array_int_int);
         java_io_InputStream_close = java_io_InputStream.requireDeclaredMethod(Name.close, Signature._void);
+        java_io_OutputStream = knownKlass(Type.java_io_OutputStream);
+        java_io_OutputStream_close = java_io_OutputStream.requireDeclaredMethod(Name.close, Signature._void);
         java_io_PrintStream = knownKlass(Type.java_io_PrintStream);
         java_io_PrintStream_println = java_io_PrintStream.requireDeclaredMethod(Name.println, Signature._void_String);
+        java_io_IOException = knownKlass(Type.java_io_IOException);
+        java_io_FileNotFoundException = knownKlass(Type.java_io_FileNotFoundException);
         java_nio_file_Path = knownKlass(Type.java_nio_file_Path);
         java_nio_file_Paths = knownKlass(Type.java_nio_file_Paths);
         java_nio_file_Paths_get = java_nio_file_Paths.requireDeclaredMethod(Name.get, Signature.Path_String_String_array);
@@ -1532,12 +1539,16 @@ public final class Meta extends ContextAccessImpl {
     public final ObjectKlass java_security_PrivilegedActionException;
     public final Method java_security_PrivilegedActionException_init_Exception;
 
+    public final ObjectKlass java_io_OutputStream;
+    public final Method java_io_OutputStream_close;
     public final ObjectKlass java_io_InputStream;
     public final Method java_io_InputStream_read;
     public final Method java_io_InputStream_close;
 
     public final ObjectKlass java_io_PrintStream;
     public final Method java_io_PrintStream_println;
+    public final ObjectKlass java_io_IOException;
+    public final ObjectKlass java_io_FileNotFoundException;
 
     public final ObjectKlass java_nio_file_Path;
     public final ObjectKlass java_nio_file_Paths;
@@ -2318,6 +2329,45 @@ public final class Meta extends ContextAccessImpl {
     @TruffleBoundary
     public EspressoException throwIllegalArgumentExceptionBoundary() {
         throw throwException(java_lang_IllegalArgumentException);
+    }
+
+    /**
+     * Converts a {@link Throwable} to a guest object and throws it.
+     * Currently supported:
+     * <ul>
+     *     <li>{@link ArrayIndexOutOfBoundsException}</li>
+     *     <li>{@link IndexOutOfBoundsException}</li>
+     *     <li>{@link FileNotFoundException}</li>
+     *     <li>{@link IOException}</li>
+     *     <li>{@link SecurityException}</li>
+     *     <li>{@link NullPointerException}</li>
+     *     <li>{@link UnsupportedOperationException}</li>
+     *     <li>{@link Throwable}</li>
+     * </ul>
+     *
+     * @param throwable the throwable object which gets converted to a guest object
+     * @return the throwable object to be thrown
+     */
+    public EspressoException convertToGuestAndThrow(Throwable throwable) {
+        ObjectKlass throwableClass;
+        if (throwable instanceof ArrayIndexOutOfBoundsException) {
+            throwableClass = java_lang_ArrayIndexOutOfBoundsException;
+        } else if (throwable instanceof IndexOutOfBoundsException) {
+            throwableClass = java_lang_IndexOutOfBoundsException;
+        } else if (throwable instanceof FileNotFoundException) {
+            throwableClass = java_io_FileNotFoundException;
+        } else if (throwable instanceof IOException) {
+            throwableClass = java_io_IOException;
+        } else if (throwable instanceof SecurityException) {
+            throwableClass = java_lang_SecurityException;
+        } else if (throwable instanceof NullPointerException) {
+            throwableClass = java_lang_NullPointerException;
+        } else if (throwable instanceof UnsupportedOperationException) {
+            throwableClass = java_lang_UnsupportedOperationException;
+        } else {
+            throwableClass = java_lang_Throwable;
+        }
+        return throwExceptionWithMessage(throwableClass, throwable.getMessage());
     }
 
     // endregion Guest exception handling (throw)

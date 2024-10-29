@@ -45,7 +45,10 @@ import com.oracle.truffle.espresso.nodes.interop.ToEspressoNodeFactory;
 import com.oracle.truffle.espresso.perf.DebugCounter;
 import com.oracle.truffle.espresso.runtime.EspressoException;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
+import com.oracle.truffle.espresso.trace.Tracer;
 import com.oracle.truffle.espresso.vm.VM;
+
+import java.io.FileInputStream;
 
 @EspressoSubstitutions
 public final class Target_java_lang_System {
@@ -80,12 +83,13 @@ public final class Target_java_lang_System {
     @ReportPolymorphism
     @Substitution
     abstract static class Arraycopy extends SubstitutionNode {
-        @Child TypeCheckNode compatibleReferenceArrayTypeCheck = insert(TypeCheckNodeGen.create());
+        @Child
+        TypeCheckNode compatibleReferenceArrayTypeCheck = insert(TypeCheckNodeGen.create());
 
         abstract void execute(@JavaType(Object.class) StaticObject src, int srcPos, @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler);
+                              @Inject EspressoLanguage language,
+                              @Inject Meta meta,
+                              @Inject SubstitutionProfiler profiler);
 
         static boolean isNull(StaticObject obj) {
             return StaticObject.isNull(obj);
@@ -123,9 +127,9 @@ public final class Target_java_lang_System {
         @SuppressWarnings("unused")
         @Specialization(guards = "nullOrNotArray(src, dest)")
         void doEarlyError(@JavaType(Object.class) StaticObject src, int srcPos, @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler) {
+                          @Inject EspressoLanguage language,
+                          @Inject Meta meta,
+                          @Inject SubstitutionProfiler profiler) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             if (StaticObject.isNull(src) || StaticObject.isNull(dest)) {
                 throw meta.throwNullPointerException();
@@ -139,13 +143,13 @@ public final class Target_java_lang_System {
 
         @Specialization(guards = "foreignArgument(src, dest)")
         void doForeign(@JavaType(Object.class) StaticObject src, int srcPos, @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler) {
+                       @Inject EspressoLanguage language,
+                       @Inject Meta meta,
+                       @Inject SubstitutionProfiler profiler) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             handleForeignArray(src.isForeignObject() ? src.rawForeignObject(language) : src, srcPos,
-                            dest.isForeignObject() ? dest.rawForeignObject(language) : dest, destPos, length,
-                            ((ArrayKlass) dest.getKlass()).getComponentType(), meta, profiler);
+                    dest.isForeignObject() ? dest.rawForeignObject(language) : dest, destPos, length,
+                    ((ArrayKlass) dest.getKlass()).getComponentType(), meta, profiler);
         }
 
         /*
@@ -155,12 +159,12 @@ public final class Target_java_lang_System {
          */
         @Specialization(guards = {"areCompatiblePrimitiveArrays(src, dest, meta._byte_array) || areCompatiblePrimitiveArrays(src, dest, meta._boolean_array)", "!foreignArgument(src, dest)"})
         void doByteArray(@JavaType(Object.class) StaticObject src, int srcPos, @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler) {
+                         @Inject EspressoLanguage language,
+                         @Inject Meta meta,
+                         @Inject SubstitutionProfiler profiler) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             try {
-                System.arraycopy(src.<byte[]> unwrap(language), srcPos, dest.<byte[]> unwrap(language), destPos, length);
+                System.arraycopy(src.<byte[]>unwrap(language), srcPos, dest.<byte[]>unwrap(language), destPos, length);
             } catch (ArrayIndexOutOfBoundsException e) {
                 throw throwOutOfBoundsEx(meta, profiler);
             }
@@ -173,7 +177,7 @@ public final class Target_java_lang_System {
                         @Inject SubstitutionProfiler profiler) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             try {
-                System.arraycopy(src.<int[]> unwrap(language), srcPos, dest.<int[]> unwrap(language), destPos, length);
+                System.arraycopy(src.<int[]>unwrap(language), srcPos, dest.<int[]>unwrap(language), destPos, length);
             } catch (ArrayIndexOutOfBoundsException e) {
                 throw throwOutOfBoundsEx(meta, profiler);
             }
@@ -181,12 +185,12 @@ public final class Target_java_lang_System {
 
         @Specialization(guards = {"areCompatiblePrimitiveArrays(src, dest, meta._double_array)", "!foreignArgument(src, dest)"})
         void doDoubleArray(@JavaType(Object.class) StaticObject src, int srcPos, @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler) {
+                           @Inject EspressoLanguage language,
+                           @Inject Meta meta,
+                           @Inject SubstitutionProfiler profiler) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             try {
-                System.arraycopy(src.<double[]> unwrap(language), srcPos, dest.<double[]> unwrap(language), destPos, length);
+                System.arraycopy(src.<double[]>unwrap(language), srcPos, dest.<double[]>unwrap(language), destPos, length);
             } catch (ArrayIndexOutOfBoundsException e) {
                 throw throwOutOfBoundsEx(meta, profiler);
             }
@@ -194,12 +198,12 @@ public final class Target_java_lang_System {
 
         @Specialization(guards = {"areCompatiblePrimitiveArrays(src, dest, meta._long_array)", "!foreignArgument(src, dest)"})
         void doLongArray(@JavaType(Object.class) StaticObject src, int srcPos, @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler) {
+                         @Inject EspressoLanguage language,
+                         @Inject Meta meta,
+                         @Inject SubstitutionProfiler profiler) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             try {
-                System.arraycopy(src.<long[]> unwrap(language), srcPos, dest.<long[]> unwrap(language), destPos, length);
+                System.arraycopy(src.<long[]>unwrap(language), srcPos, dest.<long[]>unwrap(language), destPos, length);
             } catch (ArrayIndexOutOfBoundsException e) {
                 throw throwOutOfBoundsEx(meta, profiler);
             }
@@ -207,12 +211,12 @@ public final class Target_java_lang_System {
 
         @Specialization(guards = {"areCompatiblePrimitiveArrays(src, dest, meta._char_array)", "!foreignArgument(src, dest)"})
         void doCharArray(@JavaType(Object.class) StaticObject src, int srcPos, @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler) {
+                         @Inject EspressoLanguage language,
+                         @Inject Meta meta,
+                         @Inject SubstitutionProfiler profiler) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             try {
-                System.arraycopy(src.<char[]> unwrap(language), srcPos, dest.<char[]> unwrap(language), destPos, length);
+                System.arraycopy(src.<char[]>unwrap(language), srcPos, dest.<char[]>unwrap(language), destPos, length);
             } catch (ArrayIndexOutOfBoundsException e) {
                 throw throwOutOfBoundsEx(meta, profiler);
             }
@@ -220,12 +224,12 @@ public final class Target_java_lang_System {
 
         @Specialization(guards = {"areCompatiblePrimitiveArrays(src, dest, meta._short_array)", "!foreignArgument(src, dest)"})
         void doShortArray(@JavaType(Object.class) StaticObject src, int srcPos, @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler) {
+                          @Inject EspressoLanguage language,
+                          @Inject Meta meta,
+                          @Inject SubstitutionProfiler profiler) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             try {
-                System.arraycopy(src.<short[]> unwrap(language), srcPos, dest.<short[]> unwrap(language), destPos, length);
+                System.arraycopy(src.<short[]>unwrap(language), srcPos, dest.<short[]>unwrap(language), destPos, length);
             } catch (ArrayIndexOutOfBoundsException e) {
                 throw throwOutOfBoundsEx(meta, profiler);
             }
@@ -233,12 +237,12 @@ public final class Target_java_lang_System {
 
         @Specialization(guards = {"areCompatiblePrimitiveArrays(src, dest, meta._float_array)", "!foreignArgument(src, dest)"})
         void doFloatArray(@JavaType(Object.class) StaticObject src, int srcPos, @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler) {
+                          @Inject EspressoLanguage language,
+                          @Inject Meta meta,
+                          @Inject SubstitutionProfiler profiler) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             try {
-                System.arraycopy(src.<float[]> unwrap(language), srcPos, dest.<float[]> unwrap(language), destPos, length);
+                System.arraycopy(src.<float[]>unwrap(language), srcPos, dest.<float[]>unwrap(language), destPos, length);
             } catch (ArrayIndexOutOfBoundsException e) {
                 throw throwOutOfBoundsEx(meta, profiler);
             }
@@ -247,23 +251,23 @@ public final class Target_java_lang_System {
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isNull(src)", "!isNull(dest)", "!foreignArgument(src, dest)", "hasDifferentPrimitiveArrayInput(src, dest)"})
         void doPrimitiveArrayMismatch(@JavaType(Object.class) StaticObject src, int srcPos,
-                        @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler) {
+                                      @JavaType(Object.class) StaticObject dest, int destPos, int length,
+                                      @Inject EspressoLanguage language,
+                                      @Inject Meta meta,
+                                      @Inject SubstitutionProfiler profiler) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             throw throwArrayStoreEx(meta, profiler);
         }
 
         @Specialization(guards = {"src == dest", "!isPrimitiveArray(src)", "!src.isForeignObject()"})
         void doSameArray(@JavaType(Object.class) StaticObject src, int srcPos,
-                        @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler) {
+                         @JavaType(Object.class) StaticObject dest, int destPos, int length,
+                         @Inject EspressoLanguage language,
+                         @Inject Meta meta,
+                         @Inject SubstitutionProfiler profiler) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             try {
-                System.arraycopy(src.<StaticObject[]> unwrap(language), srcPos, dest.<StaticObject[]> unwrap(language), destPos, length);
+                System.arraycopy(src.<StaticObject[]>unwrap(language), srcPos, dest.<StaticObject[]>unwrap(language), destPos, length);
             } catch (ArrayIndexOutOfBoundsException e) {
                 throw throwOutOfBoundsEx(meta, profiler);
             }
@@ -271,44 +275,44 @@ public final class Target_java_lang_System {
 
         @Specialization(guards = {"length == 0", "!nullOrNotArray(src, dest)", "!isPrimitiveArray(src)", "!isPrimitiveArray(dest)", "!foreignArgument(src, dest)"})
         void doZeroLen(@JavaType(Object.class) StaticObject src, int srcPos,
-                        @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler) {
+                       @JavaType(Object.class) StaticObject dest, int destPos, int length,
+                       @Inject EspressoLanguage language,
+                       @Inject Meta meta,
+                       @Inject SubstitutionProfiler profiler) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             boundsCheck(meta, src.length(language), srcPos, dest.length(language), destPos, length, profiler);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!nullOrNotArray(src, dest)",
-                        "!foreignArgument(src, dest)",
-                        "!isPrimitiveArray(src)",
-                        "!isPrimitiveArray(dest)",
-                        "areCompatibleReferenceArrays(src, dest)"})
+                "!foreignArgument(src, dest)",
+                "!isPrimitiveArray(src)",
+                "!isPrimitiveArray(dest)",
+                "areCompatibleReferenceArrays(src, dest)"})
         void doCompatibleReferenceArrays(@JavaType(Object.class) StaticObject src, int srcPos,
-                        @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler) {
+                                         @JavaType(Object.class) StaticObject dest, int destPos, int length,
+                                         @Inject EspressoLanguage language,
+                                         @Inject Meta meta,
+                                         @Inject SubstitutionProfiler profiler) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             try {
-                System.arraycopy(src.<StaticObject[]> unwrap(language), srcPos, dest.<StaticObject[]> unwrap(language), destPos, length);
+                System.arraycopy(src.<StaticObject[]>unwrap(language), srcPos, dest.<StaticObject[]>unwrap(language), destPos, length);
             } catch (ArrayIndexOutOfBoundsException e) {
                 throw throwOutOfBoundsEx(meta, profiler);
             }
         }
 
         @Specialization(guards = {"!nullOrNotArray(src, dest)",
-                        "!foreignArgument(src, dest)",
-                        "!isPrimitiveArray(src)",
-                        "!isPrimitiveArray(dest)",
-                        "!areCompatibleReferenceArrays(src, dest)"})
+                "!foreignArgument(src, dest)",
+                "!isPrimitiveArray(src)",
+                "!isPrimitiveArray(dest)",
+                "!areCompatibleReferenceArrays(src, dest)"})
         void doIncompatibleReferenceArrays(@JavaType(Object.class) StaticObject src, int srcPos,
-                        @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                        @Inject EspressoLanguage language,
-                        @Inject Meta meta,
-                        @Inject SubstitutionProfiler profiler,
-                        @Cached TypeCheckNode copyTypeCheck) {
+                                           @JavaType(Object.class) StaticObject dest, int destPos, int length,
+                                           @Inject EspressoLanguage language,
+                                           @Inject Meta meta,
+                                           @Inject SubstitutionProfiler profiler,
+                                           @Cached TypeCheckNode copyTypeCheck) {
             SYSTEM_ARRAYCOPY_COUNT.inc();
             boundsCheck(meta, src.length(language), srcPos, dest.length(language), destPos, length, profiler);
             Klass destType = ((ArrayKlass) dest.getKlass()).getComponentType();
@@ -326,10 +330,10 @@ public final class Target_java_lang_System {
 
     // Maintained only to be called by JVM_ArrayCopy.
     public static void arraycopy(@JavaType(Object.class) StaticObject src, int srcPos,
-                    @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                    @Inject EspressoLanguage language,
-                    @Inject Meta meta,
-                    @Inject SubstitutionProfiler profiler) {
+                                 @JavaType(Object.class) StaticObject dest, int destPos, int length,
+                                 @Inject EspressoLanguage language,
+                                 @Inject Meta meta,
+                                 @Inject SubstitutionProfiler profiler) {
         SYSTEM_ARRAYCOPY_COUNT.inc();
         try {
             doArrayCopy(src, srcPos, dest, destPos, length, language, meta, profiler);
@@ -363,7 +367,7 @@ public final class Target_java_lang_System {
      *      if an element in the src array could not be stored into the dest array because of a type mismatch
      */
     private static void doArrayCopy(@JavaType(Object.class) StaticObject src, int srcPos, @JavaType(Object.class) StaticObject dest, int destPos, int length,
-                    EspressoLanguage language, Meta meta, SubstitutionProfiler profiler) {
+                                    EspressoLanguage language, Meta meta, SubstitutionProfiler profiler) {
         if (StaticObject.isNull(src) || StaticObject.isNull(dest)) {
             throw throwNullPointerEx(meta, profiler);
         }
@@ -371,7 +375,7 @@ public final class Target_java_lang_System {
             // TODO: handle foreign arrays efficiently.
             profiler.profile(FOREIGN_PROFILE);
             handleForeignArray(src.isForeignObject() ? src.rawForeignObject(language) : src, srcPos, dest.isForeignObject() ? dest.rawForeignObject(language) : dest, destPos, length,
-                            ((ArrayKlass) dest.getKlass()).getComponentType(), meta, profiler);
+                    ((ArrayKlass) dest.getKlass()).getComponentType(), meta, profiler);
             return;
         }
 
@@ -503,7 +507,7 @@ public final class Target_java_lang_System {
 
     private static void boundsCheck(Meta meta, int srcLen, int srcPos, int dstLen, int destPos, int length, SubstitutionProfiler profiler) {
         if (srcPos < 0 || destPos < 0 || length < 0 || // Negative checks
-                        srcPos > srcLen - length || destPos > dstLen - length) {
+                srcPos > srcLen - length || destPos > dstLen - length) {
             // Other checks are caught during execution without side effects.
             throw throwOutOfBoundsEx(meta, profiler);
         }
@@ -517,7 +521,14 @@ public final class Target_java_lang_System {
 
     @TruffleBoundary(allowInlining = true)
     @Substitution(isTrivial = true)
-    public static long nanoTime() {
-        return System.nanoTime();
+    public static long nanoTime(@JavaType(System.class) StaticObject self) {
+        if (Tracer.isReplay() && Tracer.isTraced()) {
+            return Tracer.reproduce("task1", "nanoTime");
+        }
+        long time = System.nanoTime();
+        if (Tracer.isRecord() && Tracer.isTraced()) {
+            Tracer.trace("task1", self.toString(), "nanoTime", time);
+        }
+        return time;
     }
 }
