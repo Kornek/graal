@@ -22,7 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @EspressoSubstitutions
-final public class Target_java_io_FileOutputStream {
+public final class Target_java_io_FileOutputStream {
     private static final HashMap<StaticObject, OutputStream> guestToHost = new HashMap<>();
     private static final Set<File> openFiles = new HashSet<>();
 
@@ -73,18 +73,18 @@ final public class Target_java_io_FileOutputStream {
     @Substitution(hasReceiver = true)
     public static void writeBytes(@JavaType(FileOutputStream.class) StaticObject self, @JavaType(byte[].class) StaticObject bytes, int offset, int len, boolean append, @Inject Meta meta) {
         int fd = getFileDescriptor(self);
-
+        boolean isWriteTraced = false;
         if (fd == 1 || fd == 2) {
             // writing to standard output or error stream
             OutputStream known = (fd == 1) ? meta.getContext().getEnv().out() : meta.getContext().getEnv().err();
             try {
                 byte[] buffer;
-                if (Tracer.isReplay() && Tracer.isTraced()) {
+                if (Tracer.isReplay("task1") && Tracer.shouldTraceNode() && isWriteTraced) {
                     buffer = ((byte[]) Tracer.reproduce("task1", "writeBytes")).clone();
                 } else {
                     buffer = bytes.unwrap(meta.getLanguage());
                 }
-                if (Tracer.isRecord() && Tracer.isTraced()) {
+                if (Tracer.isRecord() && Tracer.shouldTraceNode() && isWriteTraced) {
                     Tracer.trace("task1", self.toString(), "writeBytes", buffer.clone());
                 }
                 write(known, buffer, offset, len);
@@ -96,12 +96,12 @@ final public class Target_java_io_FileOutputStream {
             OutputStream stream = guestToHost.get(self);
             try {
                 byte[] buffer;
-                if (Tracer.isReplay() && Tracer.isTraced()) {
+                if (Tracer.isReplay("task1") && Tracer.shouldTraceNode() && isWriteTraced) {
                     buffer = ((byte[]) Tracer.reproduce("task1", "writeBytes")).clone();
                 } else {
                     buffer = bytes.unwrap(meta.getLanguage());
                 }
-                if (Tracer.isRecord() && Tracer.isTraced()) {
+                if (Tracer.isRecord() && Tracer.shouldTraceNode() && isWriteTraced) {
                     Tracer.trace("task1", self.toString(), "writeBytes", buffer.clone());
                 }
                 write(stream, buffer, offset, len);

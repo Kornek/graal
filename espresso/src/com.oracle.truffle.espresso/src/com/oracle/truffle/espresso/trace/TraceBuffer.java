@@ -53,4 +53,9 @@ class TraceBuffer implements Serializable {
         }
         return null;
     }
+
+    protected boolean isEmpty(String taskId) {
+        Queue<TraceEntry> traceQueue = buffer.get(taskId);
+        return traceQueue == null  || traceQueue.isEmpty();
+    }
 }
