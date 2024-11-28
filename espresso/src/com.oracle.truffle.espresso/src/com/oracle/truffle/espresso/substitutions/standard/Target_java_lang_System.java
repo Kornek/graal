@@ -55,8 +55,6 @@ import com.oracle.truffle.espresso.substitutions.SubstitutionNode;
 import com.oracle.truffle.espresso.substitutions.SubstitutionProfiler;
 import com.oracle.truffle.espresso.vm.VM;
 
-import java.io.FileInputStream;
-
 @EspressoSubstitutions
 public final class Target_java_lang_System {
 
@@ -529,11 +527,11 @@ public final class Target_java_lang_System {
     @TruffleBoundary(allowInlining = true)
     @Substitution(flags = {IsTrivial})
     public static long nanoTime(@JavaType(System.class) StaticObject self) {
-        if (Tracer.isReplay() && Tracer.isTraced()) {
+        if (Tracer.isReplay("task1") && Tracer.shouldTraceNode()) {
             return Tracer.reproduce("task1", "nanoTime");
         }
         long time = System.nanoTime();
-        if (Tracer.isRecord() && Tracer.isTraced()) {
+        if (Tracer.isRecord() && Tracer.shouldTraceNode()) {
             Tracer.trace("task1", self.toString(), "nanoTime", time);
         }
         return time;

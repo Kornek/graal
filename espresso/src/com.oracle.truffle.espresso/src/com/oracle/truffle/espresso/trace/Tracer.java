@@ -81,15 +81,15 @@ public class Tracer {
         System.out.println("Trace replaying started.");
     }
 
-    public static boolean isReplay() {
-        return traceMode == TraceMode.REPLAY;
+    public static boolean isReplay(String task1) {
+        return traceMode == TraceMode.REPLAY && hasNextValue(task1);
     }
 
     public static boolean isRecord() {
         return traceMode == TraceMode.RECORD;
     }
 
-    public static boolean isTraced() {
+    public static boolean shouldTraceNode() {
         Boolean result = Truffle.getRuntime().iterateFrames(frameInstance -> {
             Node callNode = frameInstance.getCallNode();
             if (callNode != null) {
@@ -120,6 +120,14 @@ public class Tracer {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    private static boolean hasNextValue(String taskId) {
+        if (buffer.isEmpty(taskId)) {
+            turnOff();
+            return false;
+        }
+        return true;
     }
 
     public static void save(File file) {

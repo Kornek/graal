@@ -47,10 +47,10 @@ public final class Target_java_io_FileInputStream {
     public static int read0(@JavaType(FileInputStream.class) StaticObject self, @Inject Meta meta) {
         InputStream in = getHostStream(self, meta);
         try {
-            if (Tracer.isReplay() && Tracer.isTraced())
+            if (Tracer.isReplay("task1") && Tracer.shouldTraceNode())
                 return Tracer.reproduce("task1", "read0");
             int b = in.read();
-            if (Tracer.isRecord() && Tracer.isTraced()) {
+            if (Tracer.isRecord() && Tracer.shouldTraceNode()) {
                 Tracer.trace("task1", self.toString(), "read0", b);
             }
             return b;
@@ -63,16 +63,18 @@ public final class Target_java_io_FileInputStream {
     @Substitution(hasReceiver = true)
     public static int readBytes(@JavaType(FileInputStream.class) StaticObject self, @JavaType(byte[].class) StaticObject buffer, int off, int len, @Inject Meta meta) {
         InputStream in = getHostStream(self, meta);
+        boolean isSystemInStream = in.getClass().equals(meta.getContext().in().getClass());
         byte[] bytes = buffer.unwrap(meta.getLanguage());
         try {
-            if (Tracer.isReplay() && Tracer.isTraced()) {
+            if (Tracer.isReplay("task1") && Tracer.shouldTraceNode() && isSystemInStream) {
+
                 byte[] reproduced = ((byte[]) Tracer.reproduce("task1", "readBytes")).clone();
                 System.arraycopy(reproduced, 0, bytes, 0, len);
                 System.out.println("Read from trace: " + Arrays.toString(bytes));
                 return Tracer.reproduce("task1", "readBytes");
             }
             int numberOfBytesRead = in.read(bytes, off, len);
-            if (Tracer.isRecord() && Tracer.isTraced()) {
+            if (Tracer.isRecord() && Tracer.shouldTraceNode() && isSystemInStream) {
                 Tracer.trace("task1", self.toString(), "readBytes", bytes.clone());
                 Tracer.trace("task1", self.toString(), "readBytes", numberOfBytesRead);
             }
