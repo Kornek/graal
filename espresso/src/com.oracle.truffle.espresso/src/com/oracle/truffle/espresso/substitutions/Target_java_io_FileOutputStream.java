@@ -8,13 +8,10 @@ import com.oracle.truffle.espresso.meta.Meta;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
 import com.oracle.truffle.espresso.trace.Tracer;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.HashMap;
@@ -57,11 +54,24 @@ public final class Target_java_io_FileOutputStream {
     public static void open0(@JavaType(FileOutputStream.class) StaticObject self, @JavaType(String.class) StaticObject name, boolean append, @Inject Meta meta) {
         String hostName = meta.toHostString(name);
         try {
-            OutputStream outputStream = new FileOutputStream(hostName, append);
+            OutputStream outputStream;
+            if (Tracer.isReplay() && Tracer.shouldTraceNode()) {
+                Path path = Tracer.getFileSystem().getPath(Paths.get(hostName).normalize().toString());
+                outputStream = Files.newOutputStream(path);
+            } else {
+                 outputStream = new FileOutputStream(hostName, append);
+                openFiles.add(new File(hostName));
+                // modified time was probably not updated when hostName already existed
+                Files.setLastModifiedTime(Path.of(hostName), FileTime.from(Instant.now()));
+            }
             guestToHost.put(self, outputStream);
-            openFiles.add(new File(hostName));
-            // modified time was probably not updated when hostName already existed
-            Files.setLastModifiedTime(Path.of(hostName), FileTime.from(Instant.now()));
+
+            if (Tracer.isRecord() && Tracer.shouldTraceNode()) {
+                Path path = Tracer.getFileSystem().getPath(Paths.get(hostName).normalize().toString());
+                if(!Files.exists(path)) {
+                    Files.write(path, Files.readAllBytes(Path.of(hostName)));
+                }
+            }
         } catch (FileNotFoundException | SecurityException ex) {
             throw meta.convertToGuestAndThrow(ex);
         } catch (IOException ex) {
@@ -79,7 +89,7 @@ public final class Target_java_io_FileOutputStream {
             OutputStream known = (fd == 1) ? meta.getContext().getEnv().out() : meta.getContext().getEnv().err();
             try {
                 byte[] buffer;
-                if (Tracer.isReplay("task1") && Tracer.shouldTraceNode() && isWriteTraced) {
+                if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode() && isWriteTraced) {
                     buffer = ((byte[]) Tracer.reproduce("task1", "writeBytes")).clone();
                 } else {
                     buffer = bytes.unwrap(meta.getLanguage());
@@ -96,7 +106,7 @@ public final class Target_java_io_FileOutputStream {
             OutputStream stream = guestToHost.get(self);
             try {
                 byte[] buffer;
-                if (Tracer.isReplay("task1") && Tracer.shouldTraceNode() && isWriteTraced) {
+                if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode() && isWriteTraced) {
                     buffer = ((byte[]) Tracer.reproduce("task1", "writeBytes")).clone();
                 } else {
                     buffer = bytes.unwrap(meta.getLanguage());

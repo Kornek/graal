@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -21,7 +22,7 @@ public final class Target_java_io_FileInputStream {
     /**
      * Mapping from guest FileInputStream to host FileInputStream.
      */
-    private static HashMap<StaticObject, FileInputStream> guestToHost = new HashMap<>();
+    private static HashMap<StaticObject, InputStream> guestToHost = new HashMap<>();
 
     @Substitution
     public static void initIDs() {
@@ -31,13 +32,24 @@ public final class Target_java_io_FileInputStream {
     @Substitution(hasReceiver = true)
     public static void open0(@JavaType(FileInputStream.class) StaticObject self, @JavaType(String.class) StaticObject name, @Inject Meta meta) {
         String hostName = meta.toHostString(name);
-        if (!Files.exists(Path.of(hostName))) {
-            throw meta.convertToGuestAndThrow(new FileNotFoundException(hostName));
-        }
         try {
-            FileInputStream fileInputStream = new FileInputStream(hostName);
-            guestToHost.put(self, fileInputStream);
-        } catch (FileNotFoundException | SecurityException e) {
+            InputStream inputStream;
+            if (Tracer.isReplay() && Tracer.shouldTraceNode()) {
+                Path path = Tracer.getFileSystem().getPath(Paths.get(hostName).normalize().toString());
+                inputStream = Files.newInputStream(path);
+            } else {
+                if (!Files.exists(Path.of(hostName))) {
+                    throw meta.convertToGuestAndThrow(new FileNotFoundException(hostName));
+                }
+                inputStream = new FileInputStream(hostName);
+            }
+            guestToHost.put(self, inputStream);
+            if (Tracer.isRecord() && Tracer.shouldTraceNode()) {
+                Path path = Tracer.getFileSystem().getPath(Paths.get(hostName).normalize().toString());
+                if(!Files.exists(path))
+                    Files.write(path, Files.readAllBytes(Path.of(hostName)));
+            }
+        } catch (SecurityException | IOException e) {
             throw meta.convertToGuestAndThrow(e);
         }
     }
@@ -47,7 +59,7 @@ public final class Target_java_io_FileInputStream {
     public static int read0(@JavaType(FileInputStream.class) StaticObject self, @Inject Meta meta) {
         InputStream in = getHostStream(self, meta);
         try {
-            if (Tracer.isReplay("task1") && Tracer.shouldTraceNode())
+            if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode())
                 return Tracer.reproduce("task1", "read0");
             int b = in.read();
             if (Tracer.isRecord() && Tracer.shouldTraceNode()) {
@@ -66,7 +78,7 @@ public final class Target_java_io_FileInputStream {
         boolean isSystemInStream = in.getClass().equals(meta.getContext().in().getClass());
         byte[] bytes = buffer.unwrap(meta.getLanguage());
         try {
-            if (Tracer.isReplay("task1") && Tracer.shouldTraceNode() && isSystemInStream) {
+            if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode() && isSystemInStream) {
 
                 byte[] reproduced = ((byte[]) Tracer.reproduce("task1", "readBytes")).clone();
                 System.arraycopy(reproduced, 0, bytes, 0, len);

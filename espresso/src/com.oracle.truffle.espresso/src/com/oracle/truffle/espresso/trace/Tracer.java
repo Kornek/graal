@@ -4,12 +4,19 @@ import com.oracle.truffle.api.Truffle;
 
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.espresso.trace.io.InMemoryFileSystem;
+import com.oracle.truffle.espresso.trace.io.InMemoryFileSystemProvider;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Array;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.spi.FileSystemProvider;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,9 +24,22 @@ import java.util.logging.SimpleFormatter;
 
 public class Tracer {
 
+    private static final String TRACE_FILENAME = "trace.bin";
+    private static final String TRACE_FILESTORE_NAME = "trace_filestore.bin";
     private static final Logger logger = Logger.getLogger(Tracer.class.getName());
+    private static final InMemoryFileSystem fileSystem;
 
     static {
+        // fs
+        try {
+            URI uri = URI.create("memory:///");
+            FileSystemProvider provider = new InMemoryFileSystemProvider();
+            fileSystem = (InMemoryFileSystem) provider.newFileSystem(uri, Collections.emptyMap());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // logging
         try {
             String userPath = System.getProperty("user.home");
             FileHandler fileHandler = new FileHandler(userPath + "/tracer.log", true); // 'true' for append mode
@@ -36,6 +56,10 @@ public class Tracer {
     }
 
     public Tracer() {
+    }
+
+    public static FileSystem getFileSystem() {
+        return fileSystem;
     }
 
     enum TraceMode {
@@ -66,14 +90,17 @@ public class Tracer {
 
     public static void startRecording() {
         buffer.clear();
+        fileSystem.clearFileStore();
         setTraceMode(TraceMode.RECORD);
         System.out.println("Trace recording started.");
     }
 
-    public static void startReplaying(File file) {
+    public static void startReplaying(Path path) {
         buffer.clear();
+        fileSystem.clearFileStore();
         try {
-            buffer.loadFromDisk(file.getAbsolutePath());
+            buffer.loadFromDisk(path.resolve(TRACE_FILENAME).toFile());
+            fileSystem.initStoreFromDisk(path.resolve(TRACE_FILESTORE_NAME).toFile());
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -81,8 +108,8 @@ public class Tracer {
         System.out.println("Trace replaying started.");
     }
 
-    public static boolean isReplay(String task1) {
-        return traceMode == TraceMode.REPLAY && hasNextValue(task1);
+    public static boolean isReplay() {
+        return traceMode == TraceMode.REPLAY;
     }
 
     public static boolean isRecord() {
@@ -122,17 +149,19 @@ public class Tracer {
         }
     }
 
-    private static boolean hasNextValue(String taskId) {
-        if (buffer.isEmpty(taskId)) {
-            turnOff();
-            return false;
-        }
-        return true;
+    public static boolean hasRemainingTrace(String taskId) {
+        return !buffer.isEmpty(taskId);
     }
 
-    public static void save(File file) {
+    public static void save(Path path) {
         try {
-            buffer.persistToDisk(file);
+            // if path not exists, create it
+            if(!Files.exists(path)) {
+                Files.createDirectories(path);
+            }
+
+            buffer.persistToDisk(path.resolve(TRACE_FILENAME).toFile());
+            fileSystem.persistStoreToDisk(path.resolve(TRACE_FILESTORE_NAME).toFile());
         } catch (Exception e) {
             e.printStackTrace();
         }
