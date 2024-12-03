@@ -2,7 +2,6 @@ package com.oracle.truffle.espresso.trace;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 class TraceBuffer implements Serializable {
     @Serial
@@ -38,7 +37,7 @@ class TraceBuffer implements Serializable {
     }
 
     @SuppressWarnings("unchecked")
-    protected void loadFromDisk(String filename) throws IOException, ClassNotFoundException {
+    protected void loadFromDisk(File filename) throws IOException, ClassNotFoundException {
         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename))) {
             TraceBuffer loadedTraceBuffer = (TraceBuffer) in.readObject();
             this.buffer = loadedTraceBuffer.buffer;
