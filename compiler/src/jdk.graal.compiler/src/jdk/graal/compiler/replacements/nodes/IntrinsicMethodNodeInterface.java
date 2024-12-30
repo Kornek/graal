@@ -26,17 +26,21 @@ package jdk.graal.compiler.replacements.nodes;
 
 import static jdk.graal.compiler.core.common.GraalOptions.InlineGraalStubs;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import jdk.graal.compiler.core.common.spi.ForeignCallDescriptor;
 import jdk.graal.compiler.core.common.spi.ForeignCallLinkage;
+import jdk.graal.compiler.lir.gen.LIRGeneratorTool;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.nodes.ValueNodeInterface;
 import jdk.graal.compiler.nodes.spi.LIRLowerable;
 import jdk.graal.compiler.nodes.spi.NodeLIRBuilderTool;
-
 import jdk.vm.ci.code.Architecture;
+import jdk.vm.ci.meta.JavaConstant;
+import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.Value;
-import org.graalvm.nativeimage.ImageInfo;
+import jdk.vm.ci.meta.ValueKind;
 
 /**
  * Mixin for nodes that represent an entire custom assembly method. These nodes can either emit the
@@ -52,6 +56,7 @@ public interface IntrinsicMethodNodeInterface extends ValueNodeInterface, LIRLow
 
     @Override
     default void generate(NodeLIRBuilderTool gen) {
+        LIRGeneratorTool lirGeneratorTool = gen.getLIRGeneratorTool();
         if (!InlineGraalStubs.getValue(graph().getOptions())) {
             ForeignCallDescriptor foreignCallDescriptor = getForeignCallDescriptor();
             ForeignCallLinkage linkage = gen.lookupGraalStub(asNode(), foreignCallDescriptor);
@@ -61,7 +66,7 @@ public interface IntrinsicMethodNodeInterface extends ValueNodeInterface, LIRLow
                 for (int i = 0; i < args.length; i++) {
                     operands[i] = gen.operand(args[i]);
                 }
-                Value result = gen.getLIRGeneratorTool().emitForeignCall(linkage, null, operands);
+                Value result = lirGeneratorTool.emitForeignCall(linkage, null, operands);
                 if (foreignCallDescriptor.getResultType() != void.class) {
                     gen.setResult(asNode(), result);
                 }
@@ -69,11 +74,19 @@ public interface IntrinsicMethodNodeInterface extends ValueNodeInterface, LIRLow
             }
         }
 
-        if (ImageInfo.inImageBuildtimeCode() && !canBeEmitted(gen.getLIRGeneratorTool().target().arch)) {
+        if (ImageInfo.inImageBuildtimeCode() && !canBeEmitted(lirGeneratorTool.target().arch)) {
             // When building libgraal, we unconditionally compile all stubs, including those not
             // supported. In such case, we will emit hlt instruction and let the invocation plugin
             // ensure the stub is not reachable.
-            gen.getLIRGeneratorTool().emitHalt();
+            lirGeneratorTool.emitHalt();
+            Class<?> resultType = getForeignCallDescriptor().getResultType();
+            if (resultType != void.class) {
+                // Make compilation happy
+                JavaKind javaKind = JavaKind.fromJavaClass(resultType);
+                ValueKind valueKind = gen.getLIRGeneratorTool().getForeignCalls().getValueKind(javaKind);
+                Value result = gen.getLIRGeneratorTool().emitLoadConstant(valueKind, JavaConstant.defaultForKind(javaKind));
+                gen.setResult(asNode(), result);
+            }
             return;
         }
         emitIntrinsic(gen);
