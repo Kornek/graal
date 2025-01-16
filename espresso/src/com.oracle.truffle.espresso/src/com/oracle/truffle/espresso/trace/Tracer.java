@@ -45,10 +45,11 @@ public class Tracer {
             FileHandler fileHandler = new FileHandler(userPath + "/tracer.log", true); // 'true' for append mode
 
             fileHandler.setFormatter(new SimpleFormatter());
+            logger.setUseParentHandlers(false);
 
             logger.addHandler(fileHandler);
 
-            logger.setLevel(Level.INFO);
+            logger.setLevel(Level.ALL);
 
         } catch (Exception e) {
             logger.severe("Failed to initialize logger file handler: " + e.getMessage());

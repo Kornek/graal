@@ -82,7 +82,6 @@ public final class Target_java_io_FileInputStream {
 
                 byte[] reproduced = ((byte[]) Tracer.reproduce("task1", "readBytes")).clone();
                 System.arraycopy(reproduced, 0, bytes, 0, len);
-                System.out.println("Read from trace: " + Arrays.toString(bytes));
                 return Tracer.reproduce("task1", "readBytes");
             }
             int numberOfBytesRead = in.read(bytes, off, len);

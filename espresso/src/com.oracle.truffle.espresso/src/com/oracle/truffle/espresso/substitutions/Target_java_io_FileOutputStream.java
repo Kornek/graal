@@ -18,10 +18,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import static java.nio.file.StandardOpenOption.*;
+
 @EspressoSubstitutions
 public final class Target_java_io_FileOutputStream {
     private static final HashMap<StaticObject, OutputStream> guestToHost = new HashMap<>();
-    private static final Set<File> openFiles = new HashSet<>();
+    private static final Set<Path> openFiles = new HashSet<>();
 
     @Substitution
     public static void initIDs() {
@@ -33,7 +35,7 @@ public final class Target_java_io_FileOutputStream {
      *
      * @return a list of files of open streams
      */
-    public static Set<File> openFiles() {
+    public static Set<Path> openFiles() {
         return new HashSet<>(openFiles);
     }
 
@@ -57,10 +59,11 @@ public final class Target_java_io_FileOutputStream {
             OutputStream outputStream;
             if (Tracer.isReplay() && Tracer.shouldTraceNode()) {
                 Path path = Tracer.getFileSystem().getPath(Paths.get(hostName).normalize().toString());
-                outputStream = Files.newOutputStream(path);
+                outputStream = Files.newOutputStream(path, append ? APPEND : CREATE);
+                openFiles.add(path);
             } else {
-                 outputStream = new FileOutputStream(hostName, append);
-                openFiles.add(new File(hostName));
+                outputStream = new FileOutputStream(hostName, append);
+                openFiles.add(new File(hostName).toPath());
                 // modified time was probably not updated when hostName already existed
                 Files.setLastModifiedTime(Path.of(hostName), FileTime.from(Instant.now()));
             }
