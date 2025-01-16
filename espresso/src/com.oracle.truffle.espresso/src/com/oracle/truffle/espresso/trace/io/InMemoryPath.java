@@ -2,6 +2,7 @@ package com.oracle.truffle.espresso.trace.io;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.regex.Pattern;
 
@@ -84,7 +85,11 @@ public class InMemoryPath implements Path {
 
     @Override
     public URI toUri() {
-        return null;
+        try {
+            return new URI(fileSystem.provider().getScheme(), null, path, null);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Invalid URI syntax: " + path, e);
+        }
     }
 
     @Override
