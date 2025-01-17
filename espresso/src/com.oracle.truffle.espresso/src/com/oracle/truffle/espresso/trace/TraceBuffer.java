@@ -10,15 +10,15 @@ class TraceBuffer implements Serializable {
 
     //    private AtomicInteger counter = new AtomicInteger(0);
     //Replace with tree structure
-    private Map<String, Queue<TraceEntry>> buffer = new HashMap<>();
+    private Queue<TraceEntry> buffer = new LinkedList<>();
     private String sourceCodeSignature;
 
     public void setSourceCodeSignature(String signature) {
         this.sourceCodeSignature = signature;
     }
 
-    private Queue<TraceEntry> get(String taskId) {
-        return buffer.computeIfAbsent(taskId, k -> new LinkedList<>());
+    private Queue<TraceEntry> get() {
+        return buffer;
     }
 
     protected void clear() {
@@ -26,8 +26,8 @@ class TraceBuffer implements Serializable {
         buffer.clear();
     }
 
-    protected void record(String taskId, String clazz, String function, Serializable value) {
-        get(taskId).add(new TraceEntry(value));
+    protected void record(String clazz, String function, Serializable value) {
+        get().add(new TraceEntry(value));
     }
 
     protected void persistToDisk(File file) throws IOException {
@@ -45,16 +45,16 @@ class TraceBuffer implements Serializable {
         }
     }
 
-    protected TraceEntry getNextValue(String taskId, String function) {
-        Queue<TraceEntry> traceQueue = buffer.get(taskId);
+    protected TraceEntry getNextValue() {
+        Queue<TraceEntry> traceQueue = buffer;
         if (traceQueue != null && !traceQueue.isEmpty()) {
             return traceQueue.remove();
         }
         return null;
     }
 
-    protected boolean isEmpty(String taskId) {
-        Queue<TraceEntry> traceQueue = buffer.get(taskId);
+    protected boolean isEmpty() {
+        Queue<TraceEntry> traceQueue = buffer;
         return traceQueue == null  || traceQueue.isEmpty();
     }
 }
