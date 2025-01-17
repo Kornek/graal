@@ -92,8 +92,8 @@ public final class Target_java_io_FileOutputStream {
             OutputStream known = (fd == 1) ? meta.getContext().getEnv().out() : meta.getContext().getEnv().err();
             try {
                 byte[] buffer;
-                if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode() && isWriteTraced) {
-                    buffer = ((byte[]) Tracer.reproduce("task1", "writeBytes")).clone();
+                if (Tracer.isReplay() && Tracer.hasRemainingTrace() && Tracer.shouldTraceNode() && isWriteTraced) {
+                    buffer = ((byte[]) Tracer.reproduce( "writeBytes")).clone();
                 } else {
                     buffer = bytes.unwrap(meta.getLanguage());
                 }
@@ -109,8 +109,8 @@ public final class Target_java_io_FileOutputStream {
             OutputStream stream = guestToHost.get(self);
             try {
                 byte[] buffer;
-                if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode() && isWriteTraced) {
-                    buffer = ((byte[]) Tracer.reproduce("task1", "writeBytes")).clone();
+                if (Tracer.isReplay() && Tracer.hasRemainingTrace() && Tracer.shouldTraceNode() && isWriteTraced) {
+                    buffer = ((byte[]) Tracer.reproduce("writeBytes")).clone();
                 } else {
                     buffer = bytes.unwrap(meta.getLanguage());
                 }
