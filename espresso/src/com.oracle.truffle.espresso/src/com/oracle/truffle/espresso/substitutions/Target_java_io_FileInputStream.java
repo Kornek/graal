@@ -1,5 +1,6 @@
 package com.oracle.truffle.espresso.substitutions;
 
+import com.oracle.truffle.espresso.EspressoOptions;
 import com.oracle.truffle.espresso.meta.Meta;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
 import com.oracle.truffle.espresso.trace.Tracer;
@@ -32,9 +33,14 @@ public final class Target_java_io_FileInputStream {
     @Substitution(hasReceiver = true)
     public static void open0(@JavaType(FileInputStream.class) StaticObject self, @JavaType(String.class) StaticObject name, @Inject Meta meta) {
         String hostName = meta.toHostString(name);
+        assert hostName != null;
+
         try {
             InputStream inputStream;
-            if (Tracer.isReplay() && Tracer.shouldTraceNode()) {
+            boolean isClasspath = meta.getContext().getEnv().getOptions().get(EspressoOptions.Classpath)
+                    .stream()
+                    .anyMatch(cp -> Path.of(hostName).startsWith(cp));
+            if (Tracer.isReplay() && Tracer.shouldTraceNode() && !isClasspath) {
                 Path path = Tracer.getFileSystem().getPath(Paths.get(hostName).normalize().toString());
                 inputStream = Files.newInputStream(path);
             } else {
@@ -44,7 +50,7 @@ public final class Target_java_io_FileInputStream {
                 inputStream = new FileInputStream(hostName);
             }
             guestToHost.put(self, inputStream);
-            if (Tracer.isRecord() && Tracer.shouldTraceNode()) {
+            if (Tracer.isRecord() && Tracer.shouldTraceNode() && !isClasspath) {
                 Path path = Tracer.getFileSystem().getPath(Paths.get(hostName).normalize().toString());
                 if(!Files.exists(path))
                     Files.write(path, Files.readAllBytes(Path.of(hostName)));
