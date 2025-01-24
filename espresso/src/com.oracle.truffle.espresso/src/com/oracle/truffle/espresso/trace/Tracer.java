@@ -151,7 +151,11 @@ public class Tracer {
     }
 
     public static boolean hasRemainingTrace() {
-        return !buffer.isEmpty();
+        boolean remaining = !buffer.isEmpty();
+        if(!remaining) {
+            Tracer.turnOff();
+        }
+        return remaining;
     }
 
     public static void save(Path path) {
