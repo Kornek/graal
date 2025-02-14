@@ -134,15 +134,15 @@ public class Tracer {
     public static void trace(String taskId, String clazz, String function, Serializable value) {
         logger.info(() -> "Traced value: Task=%s, Class=%s, Function=%s, Value=%s"
                 .formatted(taskId, clazz, function, getArrayRepresentation(value)));
-        buffer.record(clazz, function, value);
+        buffer.record(taskId, clazz, function, value);
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T reproduce(String function) {
+    public static <T> T reproduce(String task, String function) {
         try {
-            TraceEntry entry = buffer.getNextValue();
-            logger.info(() -> "Reproduced value: Function=%s, Value=%s"
-                    .formatted(function, getArrayRepresentation(entry.getValue())));
+            TraceEntry entry = buffer.getNextValue(task, function);
+            logger.info(() -> "Reproduced value: Task=%s, Function=%s, Value=%s"
+                    .formatted(task, function, getArrayRepresentation(entry.getValue())));
             return (T) entry.getType().cast(entry.getValue());
         } catch (Exception e) {
             e.printStackTrace();
@@ -150,8 +150,8 @@ public class Tracer {
         }
     }
 
-    public static boolean hasRemainingTrace() {
-        boolean remaining = !buffer.isEmpty();
+    public static boolean hasRemainingTrace(String taskId) {
+        boolean remaining = !buffer.isEmpty(taskId);
         if(!remaining) {
             Tracer.turnOff();
         }
