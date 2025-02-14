@@ -523,8 +523,8 @@ public final class Target_java_lang_System {
     @TruffleBoundary(allowInlining = true)
     @Substitution(flags = {IsTrivial})
     public static long currentTimeMillis() {
-        if (Tracer.isReplay() && Tracer.hasRemainingTrace() && Tracer.shouldTraceNode()) {
-            return Tracer.reproduce("currentTimeMillis");
+        if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode()) {
+            return Tracer.reproduce("task1", "currentTimeMillis");
         }
         long millis = System.currentTimeMillis();
         if (Tracer.isRecord() && Tracer.shouldTraceNode()) {
@@ -537,8 +537,8 @@ public final class Target_java_lang_System {
     @TruffleBoundary(allowInlining = true)
     @Substitution(flags = {IsTrivial})
     public static long nanoTime() {
-        if (Tracer.isReplay() && Tracer.hasRemainingTrace() && Tracer.shouldTraceNode()) {
-            return Tracer.reproduce("nanoTime");
+        if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode()) {
+            return Tracer.reproduce("task1", "nanoTime");
         }
         long time = System.nanoTime();
         if (Tracer.isRecord() && Tracer.shouldTraceNode()) {

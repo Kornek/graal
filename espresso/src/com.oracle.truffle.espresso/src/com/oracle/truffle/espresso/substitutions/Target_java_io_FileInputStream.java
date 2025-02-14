@@ -65,8 +65,8 @@ public final class Target_java_io_FileInputStream {
     public static int read0(@JavaType(FileInputStream.class) StaticObject self, @Inject Meta meta) {
         InputStream in = getHostStream(self, meta);
         try {
-            if (Tracer.isReplay() && Tracer.hasRemainingTrace() && Tracer.shouldTraceNode())
-                return Tracer.reproduce("read0");
+            if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode())
+                return Tracer.reproduce("task1", "read0");
             int b = in.read();
             if (Tracer.isRecord() && Tracer.shouldTraceNode()) {
                 Tracer.trace("task1", self.toString(), "read0", b);
@@ -84,11 +84,11 @@ public final class Target_java_io_FileInputStream {
         boolean isSystemInStream = in.getClass().equals(meta.getContext().in().getClass());
         byte[] bytes = buffer.unwrap(meta.getLanguage());
         try {
-            if (Tracer.isReplay() && Tracer.hasRemainingTrace() && Tracer.shouldTraceNode() && isSystemInStream) {
+            if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode() && isSystemInStream) {
 
-                byte[] reproduced = ((byte[]) Tracer.reproduce("readBytes")).clone();
+                byte[] reproduced = ((byte[]) Tracer.reproduce("task1", "readBytes")).clone();
                 System.arraycopy(reproduced, 0, bytes, 0, len);
-                return Tracer.reproduce("readBytes");
+                return Tracer.reproduce("task1", "readBytes");
             }
             int numberOfBytesRead = in.read(bytes, off, len);
             if (Tracer.isRecord() && Tracer.shouldTraceNode() && isSystemInStream) {
