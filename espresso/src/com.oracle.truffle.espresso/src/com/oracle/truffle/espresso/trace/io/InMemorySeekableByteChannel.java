@@ -12,7 +12,7 @@ public class InMemorySeekableByteChannel implements SeekableByteChannel {
     private final InMemoryFileStore fileStore;
     private final String path;
 
-    public InMemorySeekableByteChannel(byte[] data, InMemoryFileStore fileStore, String path,  boolean append) {
+    public InMemorySeekableByteChannel(byte[] data, InMemoryFileStore fileStore, String path, boolean append) {
         this.data = data;
         this.position = append ? data.length : 0;
         this.open = true;

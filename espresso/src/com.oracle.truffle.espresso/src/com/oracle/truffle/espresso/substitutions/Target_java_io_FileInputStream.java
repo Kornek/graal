@@ -12,7 +12,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.HashMap;
 
 import static com.oracle.truffle.api.CompilerDirectives.*;
@@ -41,7 +40,13 @@ public final class Target_java_io_FileInputStream {
                     .stream()
                     .anyMatch(cp -> Path.of(hostName).startsWith(cp));
             if (Tracer.isReplay() && Tracer.shouldTraceNode() && !isClasspath) {
-                Path path = Tracer.getFileSystem().getPath(Paths.get(hostName).normalize().toString());
+                Path path = Tracer.getRestoreFileSystem().getPath(Paths.get(hostName).normalize().toString());
+                inputStream = Files.newInputStream(path);
+            } else if (Tracer.isRecord() && Tracer.shouldTraceNode() && !isClasspath) {
+                Path path = Tracer.getSnapshotFileSystem().getPath(Paths.get(hostName).normalize().toString());
+                if (!Files.exists(path)) {
+                    Files.write(path, Files.readAllBytes(Path.of(hostName)));
+                }
                 inputStream = Files.newInputStream(path);
             } else {
                 if (!Files.exists(Path.of(hostName))) {
@@ -50,11 +55,7 @@ public final class Target_java_io_FileInputStream {
                 inputStream = new FileInputStream(hostName);
             }
             guestToHost.put(self, inputStream);
-            if (Tracer.isRecord() && Tracer.shouldTraceNode() && !isClasspath) {
-                Path path = Tracer.getFileSystem().getPath(Paths.get(hostName).normalize().toString());
-                if(!Files.exists(path))
-                    Files.write(path, Files.readAllBytes(Path.of(hostName)));
-            }
+
         } catch (SecurityException | IOException e) {
             throw meta.convertToGuestAndThrow(e);
         }
@@ -65,11 +66,11 @@ public final class Target_java_io_FileInputStream {
     public static int read0(@JavaType(FileInputStream.class) StaticObject self, @Inject Meta meta) {
         InputStream in = getHostStream(self, meta);
         try {
-            if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode())
-                return Tracer.reproduce("task1", "read0");
+            if (Tracer.isReplay() && Tracer.hasRemainingTrace() && Tracer.shouldTraceNode())
+                return Tracer.reproduce("read0");
             int b = in.read();
             if (Tracer.isRecord() && Tracer.shouldTraceNode()) {
-                Tracer.trace("task1", self.toString(), "read0", b);
+                Tracer.trace(self.toString(), "read0", b);
             }
             return b;
         } catch (IOException e) {
@@ -84,16 +85,16 @@ public final class Target_java_io_FileInputStream {
         boolean isSystemInStream = in.getClass().equals(meta.getContext().in().getClass());
         byte[] bytes = buffer.unwrap(meta.getLanguage());
         try {
-            if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode() && isSystemInStream) {
+            if (Tracer.isReplay() && Tracer.hasRemainingTrace() && Tracer.shouldTraceNode() && isSystemInStream) {
 
-                byte[] reproduced = ((byte[]) Tracer.reproduce("task1", "readBytes")).clone();
+                byte[] reproduced = ((byte[]) Tracer.reproduce("readBytes")).clone();
                 System.arraycopy(reproduced, 0, bytes, 0, len);
-                return Tracer.reproduce("task1", "readBytes");
+                return Tracer.reproduce("readBytes");
             }
             int numberOfBytesRead = in.read(bytes, off, len);
             if (Tracer.isRecord() && Tracer.shouldTraceNode() && isSystemInStream) {
-                Tracer.trace("task1", self.toString(), "readBytes", bytes.clone());
-                Tracer.trace("task1", self.toString(), "readBytes", numberOfBytesRead);
+                Tracer.trace(self.toString(), "readBytes", bytes.clone());
+                Tracer.trace(self.toString(), "readBytes", numberOfBytesRead);
             }
             return numberOfBytesRead;
         } catch (IOException e) {

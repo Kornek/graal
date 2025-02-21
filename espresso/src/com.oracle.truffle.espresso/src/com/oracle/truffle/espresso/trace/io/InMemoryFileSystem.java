@@ -14,7 +14,7 @@ public class InMemoryFileSystem extends FileSystem {
     private final URI uri;
     private final String separator = "/";
     private boolean open = true;
-    private final InMemoryFileStore fileStore;
+    private InMemoryFileStore fileStore;
 
     public InMemoryFileSystem(InMemoryFileSystemProvider provider, URI uri) {
         this.provider = provider;

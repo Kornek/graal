@@ -4,6 +4,7 @@ import com.oracle.truffle.api.Truffle;
 
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.espresso.trace.io.InMemoryFileStore;
 import com.oracle.truffle.espresso.trace.io.InMemoryFileSystem;
 import com.oracle.truffle.espresso.trace.io.InMemoryFileSystemProvider;
 
@@ -15,8 +16,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,14 +27,22 @@ public class Tracer {
     private static final String TRACE_FILENAME = "trace.bin";
     private static final String TRACE_FILESTORE_NAME = "trace_filestore.bin";
     private static final Logger logger = Logger.getLogger(Tracer.class.getName());
-    private static final InMemoryFileSystem fileSystem;
+    private static final InMemoryFileSystem snapshotFileSystem;
+    private static final InMemoryFileSystem restoreFileSystem;
+    private static final TraceBuffer buffer = new TraceBuffer();
+    private static final TraceBuffer replayBuffer = new TraceBuffer();
+    private static String currentBranch;
+    private static String tracedNode;
 
+    private static TraceMode traceMode = TraceMode.OFF;
     static {
         // fs
         try {
             URI uri = URI.create("memory:///");
+            URI restoreUri = URI.create("restore:///");
             FileSystemProvider provider = new InMemoryFileSystemProvider();
-            fileSystem = (InMemoryFileSystem) provider.newFileSystem(uri, Collections.emptyMap());
+            snapshotFileSystem = (InMemoryFileSystem) provider.newFileSystem(uri, Collections.emptyMap());
+            restoreFileSystem = (InMemoryFileSystem) provider.newFileSystem(restoreUri, Collections.emptyMap());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -59,8 +67,12 @@ public class Tracer {
     public Tracer() {
     }
 
-    public static FileSystem getFileSystem() {
-        return fileSystem;
+    public static FileSystem getSnapshotFileSystem() {
+        return snapshotFileSystem;
+    }
+
+    public static FileSystem getRestoreFileSystem() {
+        return restoreFileSystem;
     }
 
     enum TraceMode {
@@ -69,11 +81,7 @@ public class Tracer {
         REPLAY
     }
 
-    private static String tracedNode;
-    private static String sourceCodeSignature;  // Store the source code hash
-    private static final TraceBuffer buffer = new TraceBuffer();
 
-    private static TraceMode traceMode = TraceMode.OFF;
 
     private static void setTraceMode(TraceMode traceType) {
         Tracer.traceMode = traceType;
@@ -82,26 +90,50 @@ public class Tracer {
     public static void setTracedNode(String tracedNode) {
         Tracer.tracedNode = tracedNode;
     }
-
-    public static void turnOff() {
-        buffer.clear();
-        setTraceMode(TraceMode.OFF);
-        System.out.println("Trace turned OFF.");
+    public static void setCurrentBranch(String branch) {
+        Tracer.currentBranch = branch;
     }
 
+//    public static void turnOff() {
+//        replayBuffer.clear();
+//        setTraceMode(TraceMode.OFF);
+//        System.out.println("Trace turned OFF.");
+//    }
+
     public static void startRecording() {
-        buffer.clear();
-        fileSystem.clearFileStore();
+//        replayBuffer.clear();
+//        snapshotFileSystem.clearFileStore();
         setTraceMode(TraceMode.RECORD);
         System.out.println("Trace recording started.");
     }
 
-    public static void startReplaying(Path path) {
+    public static void continueRecording() {
+        setTraceMode(TraceMode.RECORD);
+        System.out.println("Trace recording continued.");
+    }
+
+    public static void continueReplaying() {
+        setTraceMode(TraceMode.REPLAY);
+        copyFileStoreContents(snapshotFileSystem, restoreFileSystem);
+        copyTraceBuffer(buffer, replayBuffer);
+        System.out.println("Trace replaying continued.");
+    }
+
+    public static void initTraceSession() {
         buffer.clear();
-        fileSystem.clearFileStore();
+        replayBuffer.clear();
+        snapshotFileSystem.clearFileStore();
+        restoreFileSystem.clearFileStore();
+        setTraceMode(TraceMode.RECORD);
+        System.out.println("Trace session initialized.");
+    }
+
+    public static void initReplaySession(Path path) {
+        replayBuffer.clear();
+        restoreFileSystem.clearFileStore();
         try {
-            buffer.loadFromDisk(path.resolve(TRACE_FILENAME).toFile());
-            fileSystem.initStoreFromDisk(path.resolve(TRACE_FILESTORE_NAME).toFile());
+            replayBuffer.loadFromDisk(path.resolve(TRACE_FILENAME).toFile());
+            restoreFileSystem.initStoreFromDisk(path.resolve(TRACE_FILESTORE_NAME).toFile());
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -131,18 +163,18 @@ public class Tracer {
         return result != null && result;
     }
 
-    public static void trace(String taskId, String clazz, String function, Serializable value) {
+    public static void trace(String clazz, String function, Serializable value) {
         logger.info(() -> "Traced value: Task=%s, Class=%s, Function=%s, Value=%s"
-                .formatted(taskId, clazz, function, getArrayRepresentation(value)));
-        buffer.record(taskId, clazz, function, value);
+                .formatted(currentBranch, clazz, function, getArrayRepresentation(value)));
+        buffer.record(currentBranch, clazz, function, value);
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T reproduce(String task, String function) {
+    public static <T> T reproduce( String function) {
         try {
-            TraceEntry entry = buffer.getNextValue(task, function);
+            TraceEntry entry = replayBuffer.getNextValue(currentBranch, function);
             logger.info(() -> "Reproduced value: Task=%s, Function=%s, Value=%s"
-                    .formatted(task, function, getArrayRepresentation(entry.getValue())));
+                    .formatted(currentBranch, function, getArrayRepresentation(entry.getValue())));
             return (T) entry.getType().cast(entry.getValue());
         } catch (Exception e) {
             e.printStackTrace();
@@ -150,10 +182,10 @@ public class Tracer {
         }
     }
 
-    public static boolean hasRemainingTrace(String taskId) {
-        boolean remaining = !buffer.isEmpty(taskId);
+    public static boolean hasRemainingTrace() {
+        boolean remaining = !replayBuffer.isEmpty(currentBranch);
         if(!remaining) {
-            Tracer.turnOff();
+            Tracer.continueRecording();
         }
         return remaining;
     }
@@ -166,7 +198,7 @@ public class Tracer {
             }
 
             buffer.persistToDisk(path.resolve(TRACE_FILENAME).toFile());
-            fileSystem.persistStoreToDisk(path.resolve(TRACE_FILESTORE_NAME).toFile());
+            snapshotFileSystem.persistStoreToDisk(path.resolve(TRACE_FILESTORE_NAME).toFile());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -203,5 +235,39 @@ public class Tracer {
             return value.toString();
         }
         return null;
+    }
+
+    private static void copyTraceBuffer(TraceBuffer source, TraceBuffer destination) {
+        for (Map.Entry<String, Queue<TraceEntry>> entry : source.getBuffer().entrySet()) {
+            String branch = entry.getKey();
+            Queue<TraceEntry> sourceQueue = entry.getValue();
+
+            // Create a new queue and copy elements to avoid modifying the original queue
+            Queue<TraceEntry> newQueue = new LinkedList<>(sourceQueue);
+
+            // Store the copied queue in the destination buffer
+            destination.getBuffer().put(branch, newQueue);
+        }
+    }
+
+
+    private static void copyFileStoreContents(InMemoryFileSystem snapshotFileSystem, InMemoryFileSystem restoreFileSystem) {
+        InMemoryFileStore snapshotStore = (InMemoryFileStore) snapshotFileSystem.getFileStore();
+        InMemoryFileStore restoreStore = (InMemoryFileStore) restoreFileSystem.getFileStore();
+
+        for (Map.Entry<String, byte[]> entry : snapshotStore.getFiles().entrySet()) {
+            String path = entry.getKey();
+            byte[] data = entry.getValue();
+
+            try {
+                if (!restoreStore.fileExists(path)) {
+                    restoreStore.createFile(path);
+                }
+                restoreStore.updateFile(path, data);
+            } catch (IOException e) {
+                System.err.println("Failed to copy file: " + path);
+                e.printStackTrace();
+            }
+        }
     }
 }
