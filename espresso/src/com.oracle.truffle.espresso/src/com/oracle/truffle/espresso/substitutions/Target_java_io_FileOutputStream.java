@@ -55,11 +55,19 @@ public final class Target_java_io_FileOutputStream {
     @Substitution(hasReceiver = true)
     public static void open0(@JavaType(FileOutputStream.class) StaticObject self, @JavaType(String.class) StaticObject name, boolean append, @Inject Meta meta) {
         String hostName = meta.toHostString(name);
+        assert hostName != null;
         try {
             OutputStream outputStream;
             if (Tracer.isReplay() && Tracer.shouldTraceNode()) {
-                Path path = Tracer.getFileSystem().getPath(Paths.get(hostName).normalize().toString());
-                outputStream = Files.newOutputStream(path, append ? APPEND : CREATE);
+                Path path = Tracer.getRestoreFileSystem().getPath(Paths.get(hostName).normalize().toString());
+                outputStream = Files.newOutputStream(path, append ? APPEND : CREATE, TRUNCATE_EXISTING, WRITE);
+                openFiles.add(path);
+            } else if (Tracer.isRecord() && Tracer.shouldTraceNode()) {
+                Path path = Tracer.getSnapshotFileSystem().getPath(Paths.get(hostName).normalize().toString());
+                if(!Files.exists(path)) {
+                    Files.write(path, Files.readAllBytes(Path.of(hostName)));
+                }
+                outputStream = Files.newOutputStream(path, append ? APPEND : CREATE, TRUNCATE_EXISTING, WRITE);
                 openFiles.add(path);
             } else {
                 outputStream = new FileOutputStream(hostName, append);
@@ -67,14 +75,8 @@ public final class Target_java_io_FileOutputStream {
                 // modified time was probably not updated when hostName already existed
                 Files.setLastModifiedTime(Path.of(hostName), FileTime.from(Instant.now()));
             }
-            guestToHost.put(self, outputStream);
 
-            if (Tracer.isRecord() && Tracer.shouldTraceNode()) {
-                Path path = Tracer.getFileSystem().getPath(Paths.get(hostName).normalize().toString());
-                if(!Files.exists(path)) {
-                    Files.write(path, Files.readAllBytes(Path.of(hostName)));
-                }
-            }
+            guestToHost.put(self, outputStream);
         } catch (FileNotFoundException | SecurityException ex) {
             throw meta.convertToGuestAndThrow(ex);
         } catch (IOException ex) {
@@ -92,13 +94,13 @@ public final class Target_java_io_FileOutputStream {
             OutputStream known = (fd == 1) ? meta.getContext().getEnv().out() : meta.getContext().getEnv().err();
             try {
                 byte[] buffer;
-                if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode() && isWriteTraced) {
-                    buffer = ((byte[]) Tracer.reproduce("task1", "writeBytes")).clone();
+                if (Tracer.isReplay() && Tracer.hasRemainingTrace() && Tracer.shouldTraceNode() && isWriteTraced) {
+                    buffer = ((byte[]) Tracer.reproduce("writeBytes")).clone();
                 } else {
                     buffer = bytes.unwrap(meta.getLanguage());
                 }
                 if (Tracer.isRecord() && Tracer.shouldTraceNode() && isWriteTraced) {
-                    Tracer.trace("task1", self.toString(), "writeBytes", buffer.clone());
+                    Tracer.trace(self.toString(), "writeBytes", buffer.clone());
                 }
                 write(known, buffer, offset, len);
             } catch (IOException ex) {
@@ -109,13 +111,13 @@ public final class Target_java_io_FileOutputStream {
             OutputStream stream = guestToHost.get(self);
             try {
                 byte[] buffer;
-                if (Tracer.isReplay() && Tracer.hasRemainingTrace("task1") && Tracer.shouldTraceNode() && isWriteTraced) {
-                    buffer = ((byte[]) Tracer.reproduce("task1", "writeBytes")).clone();
+                if (Tracer.isReplay() && Tracer.hasRemainingTrace() && Tracer.shouldTraceNode() && isWriteTraced) {
+                    buffer = ((byte[]) Tracer.reproduce("writeBytes")).clone();
                 } else {
                     buffer = bytes.unwrap(meta.getLanguage());
                 }
                 if (Tracer.isRecord() && Tracer.shouldTraceNode() && isWriteTraced) {
-                    Tracer.trace("task1", self.toString(), "writeBytes", buffer.clone());
+                    Tracer.trace(self.toString(), "writeBytes", buffer.clone());
                 }
                 write(stream, buffer, offset, len);
             } catch (IOException ex) {

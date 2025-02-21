@@ -55,6 +55,9 @@ public class InMemoryFileSystemProvider extends FileSystemProvider {
             return store.createFile(inMemoryPath.toString());
         } else if (options.contains(StandardOpenOption.CREATE) || options.contains(StandardOpenOption.WRITE)) {
             try {
+                if (options.contains(StandardOpenOption.TRUNCATE_EXISTING)) {
+                    return store.truncateFile(inMemoryPath.toString());
+                }
                 return store.openFile(inMemoryPath.toString(), options.contains(StandardOpenOption.APPEND));
             } catch (NoSuchFileException e) {
                 return store.createFile(inMemoryPath.toString());

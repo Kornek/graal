@@ -37,6 +37,15 @@ public class InMemoryFileStore extends FileStore implements Serializable {
         return new InMemorySeekableByteChannel(bytes, this, path, append);
     }
 
+    public SeekableByteChannel truncateFile(String path) throws IOException {
+        if (!files.containsKey(path)) {
+            throw new NoSuchFileException("File not found: " + path);
+        }
+        byte[] emptyBytes = new byte[0];
+        files.put(path, emptyBytes);
+        return new InMemorySeekableByteChannel(emptyBytes, this, path, false);
+    }
+
     public void updateFile(String path, byte[] data) {
         files.put(path, data);
     }
@@ -112,10 +121,16 @@ public class InMemoryFileStore extends FileStore implements Serializable {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
             InMemoryFileStore store = (InMemoryFileStore) ois.readObject();
             this.files = store.files;
+        } catch (IOException | ClassNotFoundException ignored) {
+            // files not set
         }
     }
 
     public void clearStore() {
         this.files.clear();
+    }
+
+    public ConcurrentHashMap<String, byte[]> getFiles() {
+        return files;
     }
 }
