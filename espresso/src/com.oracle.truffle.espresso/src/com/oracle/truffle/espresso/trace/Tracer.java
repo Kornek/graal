@@ -129,16 +129,14 @@ public class Tracer {
     }
 
     public static void initReplaySession(Path path) {
-        replayBuffer.clear();
-        restoreFileSystem.clearFileStore();
+        initTraceSession();
         try {
-            replayBuffer.loadFromDisk(path.resolve(TRACE_FILENAME).toFile());
-            restoreFileSystem.initStoreFromDisk(path.resolve(TRACE_FILESTORE_NAME).toFile());
+            buffer.loadFromDisk(path.resolve(TRACE_FILENAME).toFile());
+            snapshotFileSystem.initStoreFromDisk(path.resolve(TRACE_FILESTORE_NAME).toFile());
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
-        setTraceMode(TraceMode.REPLAY);
-        System.out.println("Trace replaying started.");
+        continueReplaying();
     }
 
     public static boolean isReplay() {
