@@ -2,8 +2,10 @@ package com.oracle.truffle.espresso.trace;
 
 import com.oracle.truffle.api.Truffle;
 
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.espresso.EspressoLanguage;
 import com.oracle.truffle.espresso.trace.io.InMemoryFileStore;
 import com.oracle.truffle.espresso.trace.io.InMemoryFileSystem;
 import com.oracle.truffle.espresso.trace.io.InMemoryFileSystemProvider;
@@ -26,7 +28,7 @@ public class Tracer {
 
     private static final String TRACE_FILENAME = "trace.bin";
     private static final String TRACE_FILESTORE_NAME = "trace_filestore.bin";
-    private static final Logger logger = Logger.getLogger(Tracer.class.getName());
+    private static final TruffleLogger logger = TruffleLogger.getLogger(EspressoLanguage.ID, Tracer.class);
     private static final InMemoryFileSystem snapshotFileSystem;
     private static final InMemoryFileSystem restoreFileSystem;
     private static final TraceBuffer buffer = new TraceBuffer();
@@ -45,22 +47,6 @@ public class Tracer {
             restoreFileSystem = (InMemoryFileSystem) provider.newFileSystem(restoreUri, Collections.emptyMap());
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }
-
-        // logging
-        try {
-            String userPath = System.getProperty("user.home");
-            FileHandler fileHandler = new FileHandler(userPath + "/tracer.log", true); // 'true' for append mode
-
-            fileHandler.setFormatter(new SimpleFormatter());
-            logger.setUseParentHandlers(false);
-
-            logger.addHandler(fileHandler);
-
-            logger.setLevel(Level.ALL);
-
-        } catch (Exception e) {
-            logger.severe("Failed to initialize logger file handler: " + e.getMessage());
         }
     }
 
@@ -97,26 +83,26 @@ public class Tracer {
 //    public static void turnOff() {
 //        replayBuffer.clear();
 //        setTraceMode(TraceMode.OFF);
-//        System.out.println("Trace turned OFF.");
+//         logger.log(Level.FINE, "Trace turned OFF.");
 //    }
 
     public static void startRecording() {
 //        replayBuffer.clear();
 //        snapshotFileSystem.clearFileStore();
         setTraceMode(TraceMode.RECORD);
-        System.out.println("Trace recording started.");
+        logger.log(Level.FINE,"Trace recording started.");
     }
 
     public static void continueRecording() {
         setTraceMode(TraceMode.RECORD);
-        System.out.println("Trace recording continued.");
+        logger.log(Level.FINE,"Trace recording continued.");
     }
 
     public static void continueReplaying() {
         setTraceMode(TraceMode.REPLAY);
         copyFileStoreContents(snapshotFileSystem, restoreFileSystem);
         copyTraceBuffer(buffer, replayBuffer);
-        System.out.println("Trace replaying continued.");
+        logger.log(Level.FINE, "Trace replaying continued.");
     }
 
     public static void initTraceSession() {
@@ -125,7 +111,7 @@ public class Tracer {
         snapshotFileSystem.clearFileStore();
         restoreFileSystem.clearFileStore();
         setTraceMode(TraceMode.RECORD);
-        System.out.println("Trace session initialized.");
+        logger.log(Level.FINE, "Trace session initialized.");
     }
 
     public static void initReplaySession(Path path) {
@@ -162,7 +148,7 @@ public class Tracer {
     }
 
     public static void trace(String clazz, String function, Serializable value) {
-        logger.info(() -> "Traced value: Task=%s, Class=%s, Function=%s, Value=%s"
+        logger.log(Level.FINEST, "Traced value: Task=%s, Class=%s, Function=%s, Value=%s"
                 .formatted(currentBranch, clazz, function, getArrayRepresentation(value)));
         buffer.record(currentBranch, clazz, function, value);
     }
@@ -171,7 +157,7 @@ public class Tracer {
     public static <T> T reproduce( String function) {
         try {
             TraceEntry entry = replayBuffer.getNextValue(currentBranch, function);
-            logger.info(() -> "Reproduced value: Task=%s, Function=%s, Value=%s"
+            logger.log(Level.FINEST, "Reproduced value: Task=%s, Function=%s, Value=%s"
                     .formatted(currentBranch, function, getArrayRepresentation(entry.getValue())));
             return (T) entry.getType().cast(entry.getValue());
         } catch (Exception e) {
@@ -263,7 +249,7 @@ public class Tracer {
                 }
                 restoreStore.updateFile(path, data);
             } catch (IOException e) {
-                System.err.println("Failed to copy file: " + path);
+                logger.log(Level.SEVERE,"Failed to copy file: " + path);
                 e.printStackTrace();
             }
         }
