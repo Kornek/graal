@@ -6,6 +6,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileStoreAttributeView;
 import java.util.concurrent.ConcurrentHashMap;
@@ -111,14 +112,14 @@ public class InMemoryFileStore extends FileStore implements Serializable {
         return null;
     }
 
-    public void saveToFile(File file) throws IOException {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
+    public void saveToFile(Path path) throws IOException {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path.toString()))) {
             oos.writeObject(this);
         }
     }
 
-    public void loadFromFile(File file) throws IOException, ClassNotFoundException {
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+    public void loadFromFile(Path path) throws IOException, ClassNotFoundException {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(path.toString()))) {
             InMemoryFileStore store = (InMemoryFileStore) ois.readObject();
             this.files = store.files;
         } catch (IOException | ClassNotFoundException ignored) {

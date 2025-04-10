@@ -1,6 +1,7 @@
 package com.oracle.truffle.espresso.trace;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.*;
 
 class TraceBuffer implements Serializable {
@@ -22,15 +23,15 @@ class TraceBuffer implements Serializable {
         get(branch).add(new TraceEntry(value));
     }
 
-    protected void persistToDisk(File file) throws IOException {
-        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file))) {
+    protected void persistToDisk(Path path) throws IOException {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(path.toString()))) {
             out.writeObject(this);
         }
     }
 
     @SuppressWarnings("unchecked")
-    protected void loadFromDisk(File filename) throws IOException, ClassNotFoundException {
-        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename))) {
+    protected void loadFromDisk(Path path) throws IOException, ClassNotFoundException {
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(path.toString()))) {
             TraceBuffer loadedTraceBuffer = (TraceBuffer) in.readObject();
             this.buffer = loadedTraceBuffer.buffer;
         } catch (IOException | ClassNotFoundException ignored) {
