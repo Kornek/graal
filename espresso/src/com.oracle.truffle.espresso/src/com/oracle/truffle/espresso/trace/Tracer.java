@@ -67,8 +67,6 @@ public class Tracer {
         REPLAY
     }
 
-
-
     private static void setTraceMode(TraceMode traceType) {
         Tracer.traceMode = traceType;
     }
@@ -117,8 +115,8 @@ public class Tracer {
     public static void initReplaySession(Path path) {
         initTraceSession();
         try {
-            buffer.loadFromDisk(path.resolve(TRACE_FILENAME).toFile());
-            snapshotFileSystem.initStoreFromDisk(path.resolve(TRACE_FILESTORE_NAME).toFile());
+            buffer.loadFromDisk(path.resolve(TRACE_FILENAME));
+            snapshotFileSystem.initStoreFromDisk(path.resolve(TRACE_FILESTORE_NAME));
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -181,8 +179,8 @@ public class Tracer {
                 Files.createDirectories(path);
             }
 
-            buffer.persistToDisk(path.resolve(TRACE_FILENAME).toFile());
-            snapshotFileSystem.persistStoreToDisk(path.resolve(TRACE_FILESTORE_NAME).toFile());
+            buffer.persistToDisk(path.resolve(TRACE_FILENAME));
+            snapshotFileSystem.persistStoreToDisk(path.resolve(TRACE_FILESTORE_NAME));
         } catch (Exception e) {
             e.printStackTrace();
         }

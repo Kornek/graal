@@ -1,6 +1,5 @@
 package com.oracle.truffle.espresso.trace.io;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
@@ -92,11 +91,11 @@ public class InMemoryFileSystem extends FileSystem {
         fileStore.clearStore();
     }
 
-    public void initStoreFromDisk(File file) throws IOException, ClassNotFoundException {
-        fileStore.loadFromFile(file);
+    public void initStoreFromDisk(Path path) throws IOException, ClassNotFoundException {
+        fileStore.loadFromFile(path);
     }
 
-    public void persistStoreToDisk(File file) throws IOException {
-        fileStore.saveToFile(file);
+    public void persistStoreToDisk(Path path) throws IOException {
+        fileStore.saveToFile(path);
     }
 }
