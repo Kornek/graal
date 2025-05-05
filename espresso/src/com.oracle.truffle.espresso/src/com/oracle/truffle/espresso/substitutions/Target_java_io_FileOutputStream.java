@@ -59,7 +59,7 @@ public final class Target_java_io_FileOutputStream {
         try {
             OutputStream outputStream;
             if (Tracer.isReplay() && Tracer.shouldTraceNode()) {
-                Path path = Tracer.getRestoreFileSystem().getPath(Paths.get(hostName).normalize().toString());
+                Path path = Tracer.getSnapshotFileSystem().getPath(Paths.get(hostName).normalize().toString());
                 outputStream = Files.newOutputStream(path, append ? APPEND : CREATE, TRUNCATE_EXISTING, WRITE);
                 openFiles.add(path);
             } else if (Tracer.isRecord() && Tracer.shouldTraceNode()) {
