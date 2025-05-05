@@ -40,7 +40,7 @@ public final class Target_java_io_FileInputStream {
                     .stream()
                     .anyMatch(cp -> Path.of(hostName).startsWith(cp));
             if (Tracer.isReplay() && Tracer.shouldTraceNode() && !isClasspath) {
-                Path path = Tracer.getRestoreFileSystem().getPath(Paths.get(hostName).normalize().toString());
+                Path path = Tracer.getSnapshotFileSystem().getPath(Paths.get(hostName).normalize().toString());
                 inputStream = Files.newInputStream(path);
             } else if (Tracer.isRecord() && Tracer.shouldTraceNode() && !isClasspath) {
                 Path path = Tracer.getSnapshotFileSystem().getPath(Paths.get(hostName).normalize().toString());

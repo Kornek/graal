@@ -30,7 +30,7 @@ public class Tracer {
     private static final String TRACE_FILESTORE_NAME = "trace_filestore.bin";
     private static final TruffleLogger logger = TruffleLogger.getLogger(EspressoLanguage.ID, Tracer.class);
     private static final InMemoryFileSystem snapshotFileSystem;
-    private static final InMemoryFileSystem restoreFileSystem;
+//    private static final InMemoryFileSystem restoreFileSystem;
     private static final TraceBuffer buffer = new TraceBuffer();
     private static final TraceBuffer replayBuffer = new TraceBuffer();
     private static String currentBranch;
@@ -44,7 +44,7 @@ public class Tracer {
             URI restoreUri = URI.create("restore:///");
             FileSystemProvider provider = new InMemoryFileSystemProvider();
             snapshotFileSystem = (InMemoryFileSystem) provider.newFileSystem(uri, Collections.emptyMap());
-            restoreFileSystem = (InMemoryFileSystem) provider.newFileSystem(restoreUri, Collections.emptyMap());
+//            restoreFileSystem = (InMemoryFileSystem) provider.newFileSystem(restoreUri, Collections.emptyMap());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -57,9 +57,9 @@ public class Tracer {
         return snapshotFileSystem;
     }
 
-    public static FileSystem getRestoreFileSystem() {
-        return restoreFileSystem;
-    }
+//    public static FileSystem getRestoreFileSystem() {
+//        return restoreFileSystem;
+//    }
 
     enum TraceMode {
         OFF,
@@ -98,7 +98,7 @@ public class Tracer {
 
     public static void continueReplaying() {
         setTraceMode(TraceMode.REPLAY);
-        copyFileStoreContents(snapshotFileSystem, restoreFileSystem);
+//        copyFileStoreContents(snapshotFileSystem, restoreFileSystem);
         copyTraceBuffer(buffer, replayBuffer);
         logger.log(Level.FINE, "Trace replaying continued.");
     }
@@ -107,7 +107,7 @@ public class Tracer {
         buffer.clear();
         replayBuffer.clear();
         snapshotFileSystem.clearFileStore();
-        restoreFileSystem.clearFileStore();
+//        restoreFileSystem.clearFileStore();
         setTraceMode(TraceMode.RECORD);
         logger.log(Level.FINE, "Trace session initialized.");
     }

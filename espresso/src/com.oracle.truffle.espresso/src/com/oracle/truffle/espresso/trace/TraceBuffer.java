@@ -25,15 +25,14 @@ class TraceBuffer implements Serializable {
 
     protected void persistToDisk(Path path) throws IOException {
         try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(path.toString()))) {
-            out.writeObject(this);
+            out.writeObject(this.buffer);
         }
     }
 
     @SuppressWarnings("unchecked")
     protected void loadFromDisk(Path path) throws IOException, ClassNotFoundException {
         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(path.toString()))) {
-            TraceBuffer loadedTraceBuffer = (TraceBuffer) in.readObject();
-            this.buffer = loadedTraceBuffer.buffer;
+            this.buffer = (Map<String, Queue<TraceEntry>>) in.readObject();
         } catch (IOException | ClassNotFoundException ignored) {
             // buffer not set
         }
