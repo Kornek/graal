@@ -101,6 +101,8 @@ public class EspressoSymbols {
 
         // io
         public static final Symbol<Type> java_io_InputStream = SYMBOLS.putType("Ljava/io/InputStream;");
+        public static final Symbol<Type> java_io_OutputStream = SYMBOLS.putType("Ljava/io/OutputStream;");
+
         public static final Symbol<Type> java_io_PrintStream = SYMBOLS.putType("Ljava/io/PrintStream;");
         public static final Symbol<Type> java_io_IOException = SYMBOLS.putType("Ljava/io/IOException;");
         public static final Symbol<Type> java_io_File = SYMBOLS.putType("Ljava/io/File;");
@@ -721,6 +723,7 @@ public class EspressoSymbols {
         public static final Symbol<Name> available = SYMBOLS.putName("available");
         public static final Symbol<Name> read = SYMBOLS.putName("read");
         public static final Symbol<Name> close = SYMBOLS.putName("close");
+        public static final Symbol<Name> closed = SYMBOLS.putName("closed");
         public static final Symbol<Name> skip = SYMBOLS.putName("skip");
         // java.io.RandomAccessFile
         public static final Symbol<Name> O_RDONLY = SYMBOLS.putName("O_RDONLY");
@@ -747,6 +750,10 @@ public class EspressoSymbols {
         public static final Symbol<Name> open = SYMBOLS.putName("open");
         public static final Symbol<Name> INSTANCE = SYMBOLS.putName("INSTANCE");
         public static final Symbol<Name> theFileSystem = SYMBOLS.putName("theFileSystem");
+        public static final Symbol<Name> getAbsolutePath = SYMBOLS.putName("getAbsolutePath");
+        public static final Symbol<Name> toAbsolutePath = SYMBOLS.putName("toAbsolutePath");
+
+        public static final Symbol<Name> valid = SYMBOLS.putName("valid");
         // sun.nio.fs.TrufflePath
         public static final Symbol<Name> HIDDEN_TRUFFLE_FILE = SYMBOLS.putName("0HIDDEN_TRUFFLE_FILE");
         public static final Symbol<Name> instance = SYMBOLS.putName("instance");

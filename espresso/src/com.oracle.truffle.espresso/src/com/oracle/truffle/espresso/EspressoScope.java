@@ -45,6 +45,9 @@ import com.oracle.truffle.espresso.classfile.JavaKind;
 import com.oracle.truffle.espresso.classfile.attributes.Local;
 import com.oracle.truffle.espresso.classfile.descriptors.Name;
 import com.oracle.truffle.espresso.classfile.descriptors.Symbol;
+import com.oracle.truffle.espresso.classfile.descriptors.Type;
+import com.oracle.truffle.espresso.classfile.descriptors.TypeSymbols;
+import com.oracle.truffle.espresso.descriptors.EspressoSymbols;
 import com.oracle.truffle.espresso.meta.EspressoError;
 import com.oracle.truffle.espresso.nodes.EspressoFrame;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
@@ -62,7 +65,7 @@ public final class EspressoScope {
             int slot = 0;
             String identifier = "0";
             Local local = liveLocals[0];
-            FrameSlotInfo frameSlotInfo = new FrameSlotInfo(slot, local.getJavaKind());
+            FrameSlotInfo frameSlotInfo = new FrameSlotInfo(slot, local.getJavaKind().getType());
             slotsMap = Collections.singletonMap(identifier, frameSlotInfo);
             identifiersMap = Collections.singletonMap(local.getNameAsString(), frameSlotInfo);
         } else {
@@ -71,7 +74,7 @@ public final class EspressoScope {
             for (Local local : liveLocals) {
                 String slotNumber = String.valueOf(local.getSlot());
                 String localName = local.getNameAsString();
-                FrameSlotInfo frameSlotInfo = new FrameSlotInfo(local.getSlot(), local.getJavaKind());
+                FrameSlotInfo frameSlotInfo = new FrameSlotInfo(local.getSlot(), local.getJavaKind().getType());
                 slotsMap.put(slotNumber, frameSlotInfo);
                 identifiersMap.put(localName, frameSlotInfo);
             }
@@ -220,7 +223,7 @@ public final class EspressoScope {
             return slotInfo;
         }
 
-        public Symbol<Symbol.Type> getMembersStaticType(String member) throws UnsupportedMessageException, UnknownIdentifierException {
+        public Symbol<Type> getMembersStaticType(String member) throws UnsupportedMessageException, UnknownIdentifierException {
             return lookupMember(member).staticType;
         }
 
@@ -292,11 +295,11 @@ public final class EspressoScope {
 
         private final int slot;
         private final JavaKind kind;
-        private final Symbol<Symbol.Type> staticType;
+        private final Symbol<Type> staticType;
 
-        FrameSlotInfo(int slot, Symbol<Symbol.Type> staticType) {
+        FrameSlotInfo(int slot, Symbol<Type> staticType) {
             this.slot = slot;
-            this.kind = Types.getJavaKind(staticType);
+            this.kind = TypeSymbols.getJavaKind(staticType);
             this.staticType = staticType;
         }
 
@@ -308,7 +311,7 @@ public final class EspressoScope {
             return kind;
         }
 
-        public Symbol<Symbol.Type> getStaticType() {
+        public Symbol<Type> getStaticType() {
             return staticType;
         }
     }

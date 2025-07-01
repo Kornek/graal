@@ -2,7 +2,7 @@ package com.oracle.truffle.espresso.substitutions;
 
 
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.espresso.descriptors.Symbol;
+import com.oracle.truffle.espresso.descriptors.EspressoSymbols;
 import com.oracle.truffle.espresso.impl.Field;
 import com.oracle.truffle.espresso.meta.Meta;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
@@ -128,12 +128,12 @@ public final class Target_java_io_FileOutputStream {
 
     static int getFileDescriptor(@JavaType(FileOutputStream.class) StaticObject self) {
         StaticObject fileDescriptor = getFileDescriptorObject(self);
-        Field fdField = fileDescriptor.getKlass().lookupDeclaredField(Symbol.Name.fd, Symbol.Type._int);
+        Field fdField = fileDescriptor.getKlass().lookupDeclaredField(EspressoSymbols.Names.fd, EspressoSymbols.Types._int);
         return (int) fdField.get(fileDescriptor);
     }
 
     static StaticObject getFileDescriptorObject(@JavaType(FileOutputStream.class) StaticObject self) {
-        Field fileDescriptorField = self.getKlass().lookupDeclaredField(Symbol.Name.fd, Symbol.Type.java_io_FileDescriptor);
+        Field fileDescriptorField = self.getKlass().lookupDeclaredField(EspressoSymbols.Names.fd, EspressoSymbols.Types.java_io_FileDescriptor);
         return (StaticObject) fileDescriptorField.get(self);
     }
 

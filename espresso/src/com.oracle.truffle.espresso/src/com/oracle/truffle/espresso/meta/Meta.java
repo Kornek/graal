@@ -425,10 +425,10 @@ public final class Meta extends ContextAccessImpl
         java_nio_file_Path = knownKlass(Types.java_nio_file_Path);
         java_nio_file_Paths = knownKlass(Types.java_nio_file_Paths);
         java_nio_file_Paths_get = java_nio_file_Paths.requireDeclaredMethod(Names.get, Signatures.Path_String_String_array);
-        java_io_OutputStream = knownKlass(Type.java_io_OutputStream);
-        java_io_OutputStream_close = java_io_OutputStream.requireDeclaredMethod(Name.close, Signature._void);
-        java_io_IOException = knownKlass(Type.java_io_IOException);
-        java_io_FileNotFoundException = knownKlass(Type.java_io_FileNotFoundException);
+        java_io_OutputStream = knownKlass(Types.java_io_OutputStream);
+        java_io_OutputStream_close = java_io_OutputStream.requireDeclaredMethod(Names.close, Signatures._void);
+        java_io_IOException = knownKlass(Types.java_io_IOException);
+        java_io_FileNotFoundException = knownKlass(Types.java_io_FileNotFoundException);
 
         java_nio_file_FileAlreadyExistsException = knownKlass(Types.java_nio_file_FileAlreadyExistsException);
         java_nio_file_DirectoryNotEmptyException = knownKlass(Types.java_nio_file_DirectoryNotEmptyException);
@@ -2803,6 +2803,43 @@ public final class Meta extends ContextAccessImpl
         throw throwExceptionWithMessage(java_lang_ArrayIndexOutOfBoundsException, "Array index out of range: " + index + " for length " + length);
     }
 
+    /**
+     * Converts a {@link Throwable} to a guest object and throws it.
+     * Currently supported:
+     * <ul>
+     *     <li>{@link ArrayIndexOutOfBoundsException}</li>
+     *     <li>{@link IndexOutOfBoundsException}</li>
+     *     <li>{@link FileNotFoundException}</li>
+     *     <li>{@link IOException}</li>
+     *     <li>{@link SecurityException}</li>
+     *     <li>{@link NullPointerException}</li>
+     *     <li>{@link UnsupportedOperationException}</li>
+     *     <li>{@link Throwable}</li>
+     * </ul>
+     * @param throwable the throwable object which gets converted to a guest object
+     * @return the throwable object to be thrown
+     */
+    public EspressoException convertToGuestAndThrow(Throwable throwable) {
+        ObjectKlass throwableClass;
+        if (throwable instanceof ArrayIndexOutOfBoundsException) {
+            throwableClass = java_lang_ArrayIndexOutOfBoundsException;
+        } else if (throwable instanceof IndexOutOfBoundsException) {
+            throwableClass = java_lang_IndexOutOfBoundsException;
+        } else if (throwable instanceof FileNotFoundException) {
+            throwableClass = java_io_FileNotFoundException;
+        } else if (throwable instanceof IOException) {
+            throwableClass = java_io_IOException;
+        } else if (throwable instanceof SecurityException) {
+            throwableClass = java_lang_SecurityException;
+        } else if (throwable instanceof NullPointerException) {
+            throwableClass = java_lang_NullPointerException;
+        } else if (throwable instanceof UnsupportedOperationException) {
+            throwableClass = java_lang_UnsupportedOperationException;
+        } else {
+            throwableClass = java_lang_Throwable;
+        }
+        return throwExceptionWithMessage(throwableClass, throwable.getMessage());
+    }
     // endregion Guest exception handling (throw)
 
     public ObjectKlass knownKlass(Symbol<Type> type) {
